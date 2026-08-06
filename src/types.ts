@@ -58,22 +58,30 @@ export interface GoogleEmbeddingOptions {
 }
 
 // Client
-export interface ChatbotTheme {
-  /** Primary accent color for buttons, header, and user bubbles (e.g. "#2563eb") */
+export interface ChatbotThemeTokens {
+  /** Primary accent color for buttons, header, and user bubbles */
   primaryColor?: string;
-  /** Text color on primary elements (e.g. "#ffffff") */
+  /** Text color on primary elements */
   primaryForeground?: string;
-  /** Main background color for the chat window (e.g. "#ffffff") */
+  /** Main background color for the chat window */
   background?: string;
-  /** Text color inside the chat window (e.g. "#0f172a") */
+  /** Text color inside the chat window */
   foreground?: string;
-  /** Background color for bot messages, input, and chips (e.g. "#f1f5f9") */
+  /** Background color for bot messages, input, and chips */
   mutedBackground?: string;
-  /** Secondary text color for subtitles and labels (e.g. "#64748b") */
+  /** Secondary text color for subtitles and labels */
   mutedForeground?: string;
-  /** Border color for inputs and prompt chips (e.g. "#e2e8f0") */
+  /** Border color for inputs and prompt chips */
   borderColor?: string;
 }
+
+/**
+ * Supports flat color tokens or explicit light/dark overrides.
+ */
+export type ChatbotTheme = ChatbotThemeTokens & {
+  light?: ChatbotThemeTokens;
+  dark?: ChatbotThemeTokens;
+};
 
 export interface ChatbotProps {
   /** Title displayed in the chatbot header */

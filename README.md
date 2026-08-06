@@ -1,35 +1,48 @@
 # next-ai-chatbot
 
-A small, TypeScript-first chatbot package for Next.js apps. It provides a drop-in chat UI, a server route helper for AI SDK streaming, and a CLI for building retrieval embeddings from local Markdown and text files.
+A TypeScript-first chatbot package for Next.js apps. It provides a client-side chat widget, a server route helper for AI SDK streaming, and a CLI for generating document embeddings from local Markdown and text files.
 
-- Plug-and-play chatbot component
-- Streaming responses
-- AI SDK support
-- Optional Retrieval-Augmented Generation (RAG)
-- CLI for generating embeddings
-- Theme customization
-- Markdown rendering
-- TypeScript support
+- Floating chat UI with starter prompts, empty state, and input form
+- Streaming responses via the AI SDK route helper
+- Optional Retrieval-Augmented Generation (RAG) with embeddings JSON
+- CLI indexing for Markdown and text files
+- Theme customization with light/dark overrides and CSS variable injection
+- Markdown rendering in chat messages
+- TypeScript support for the client and server entrypoints
+
+## Demo
+
+[![next-ai-chatbot Demo](https://img.youtube.com/vi/YZPEbH7LYpE/maxresdefault.jpg)](https://www.youtube.com/watch?v=YZPEbH7LYpE)
+
+## Table of Contents
+
+- [Features](#features)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Compound Components](#compound-components)
+- [Basic Chatbot](#basic-chatbot)
+- [RAG](#rag)
+- [CLI](#cli)
+- [Chatbot Component API](#chatbot-component-api)
+- [Theme API](#theme-api)
+- [createChatRoute()](#createchatroute)
+- [Folder Structure](#folder-structure)
+- [Examples](#examples)
+- [Troubleshooting](#troubleshooting)
+- [FAQ](#faq)
+- [License](#license)
 
 ---
 
 ## Features
 
-### Chatbot component
-
-The client component renders a floating chat window with starter prompts, a message history, markdown rendering, and a simple theme system. It uses the AI SDK React hook under the hood and sends messages to a route you define.
-
-### Streaming responses
-
-The server route helper wraps the AI SDK streaming API and returns a UI message stream that the component can render in real time.
-
-### RAG support
-
-If you provide an embeddings index, the route can retrieve relevant chunks before sending the prompt to the model. The package includes a basic retrieval flow and a CLI to generate the index.
-
-### CLI
-
-The CLI scans a folder for Markdown and text files, chunks them, generates embeddings, and saves them as JSON. The default output path is ./chatbot/embeddings.json.
+- Floating chatbot widget with a trigger button, header, window, message list, and input form.
+- Starter prompts and an empty-state message shown before the first user turn.
+- Message rendering with `react-markdown`.
+- Theme support through `theme`, `themeMode`, and `classNames` props, with CSS custom properties injected for light and dark variations.
+- A server route helper that streams responses from an AI model while optionally retrieving context chunks for RAG.
+- A CLI that scans Markdown and text files, chunks them, generates embeddings, and writes an embeddings JSON index.
+- Compound component exports on the main `Chatbot` export: `Chatbot.Root`, `Chatbot.Trigger`, `Chatbot.Window`, `Chatbot.Header`, `Chatbot.Messages`, and `Chatbot.Input`.
 
 ---
 
@@ -41,7 +54,7 @@ Install the package:
 npm install next-ai-chatbot
 ```
 
-This package declares these peer dependencies:
+Install the peer dependencies required by the client and server helpers:
 
 ```bash
 npm install next react react-dom ai @ai-sdk/react react-markdown
@@ -64,7 +77,7 @@ npm install @ai-sdk/google
 
 ### 1. Create an API route
 
-Create an API route such as app/api/chat/route.ts in a Next.js app router project:
+Create an API route such as `app/api/chat/route.ts` in a Next.js app router project:
 
 ```ts
 import { createChatRoute } from "next-ai-chatbot/server";
@@ -99,6 +112,34 @@ export default function ChatWidget() {
 ### 3. Ask a question
 
 Open the page and use the floating widget. The component will send the message to your route and stream the response back.
+
+---
+
+## Compound Components
+
+The main `Chatbot` export also exposes compound component members attached to the object: `Chatbot.Root`, `Chatbot.Trigger`, `Chatbot.Window`, `Chatbot.Header`, `Chatbot.Messages`, and `Chatbot.Input`.
+
+```tsx
+"use client";
+
+import { Chatbot } from "next-ai-chatbot/client";
+
+export default function CustomChatLayout() {
+  return (
+    <Chatbot.Root apiEndpoint="/api/chat" position="bottom-right">
+      <Chatbot.Trigger text="Need help?" />
+      <Chatbot.Window>
+        <Chatbot.Header
+          title="Support Center"
+          subtitle="Ask about setup or usage"
+        />
+        <Chatbot.Messages />
+        <Chatbot.Input />
+      </Chatbot.Window>
+    </Chatbot.Root>
+  );
+}
+```
 
 ---
 
@@ -143,16 +184,6 @@ export default function BasicChatbot() {
 ---
 
 ## RAG
-
-Documents
-↓
-CLI
-↓
-Embeddings
-↓
-Runtime retrieval
-↓
-LLM
 
 The package does not include a built-in document store. Instead, you generate an embeddings index from local files and load it into the route at runtime.
 
@@ -205,14 +236,14 @@ export const POST = createChatRoute({
   rag: {
     embeddings,
     provider: googleEmbedding(),
-    topK: 3, //Optional
+    topK: 3,
   },
 });
 ```
 
-### 4. Configure createChatRoute()
+### 4. Configure `createChatRoute()`
 
-The RAG block is optional. When it is present, the route extracts the last user message, generates a query embedding, retrieves the strongest matching chunks, and injects them into the system prompt.
+The RAG block is optional. When present, the route extracts the last user message, generates a query embedding, retrieves the strongest matching chunks, and injects them into the system prompt.
 
 ---
 
@@ -221,7 +252,7 @@ The RAG block is optional. When it is present, the route extracts the last user 
 The package ships one CLI command:
 
 ```bash
-npx next-ai-chatbot index <folder>
+npx next-ai-chatbot index [documentsPath] [options]
 ```
 
 ### What it does
@@ -238,17 +269,14 @@ The implementation currently reads files matching this glob pattern:
 
 ### Options
 
-```bash
-npx next-ai-chatbot index [documentsPath] [options]
-```
-
 - `--google` uses the built-in Google embedding provider.
+- `--openai` is accepted by the CLI wrapper, but the current server entrypoint in this repository exposes the Google provider through `googleEmbedding()`.
 - `-o, --output <path>` sets a custom output path.
-- `--openai` is parsed by the CLI, but the repository currently only exposes the Google provider through the server entrypoint.
 
-### Default output
+### Default paths
 
-If you do not pass `--output`, the embeddings file is written to:
+If you do not pass an explicit input path, the CLI uses `./content`.
+If you do not pass `--output` or `-o`, the embeddings file is written to:
 
 ```text
 ./chatbot/embeddings.json
@@ -271,39 +299,41 @@ The component props come from the exported interface in the package.
 
 | Property | Type | Default | Description |
 | --- | --- | --- | --- |
-| title | string | "Ask AI Assistant" | Header title. |
-| subtitle | string | "Trained on custom project data and experience" | Header subtitle. |
-| triggerText | string | "Ask AI" | Label shown on the floating trigger button. |
-| triggerIcon | ReactNode | inline SVG | Custom trigger icon. |
-| sendIcon | ReactNode | inline SVG | Custom send button icon. |
-| closeIcon | ReactNode | inline SVG | Custom close button icon. |
-| position | "bottom-right" \| "bottom-left" \| "top-right" \| "top-left" | "bottom-right" | Placement of the floating widget. |
-| starterPrompts | string[] | three default prompts | Chips shown when the conversation is empty. |
-| emptyStateText | string | welcome message | Copy shown in the empty state. |
-| placeholder | string | "Ask a question..." | Input placeholder. |
-| starterPromptsLabel | string | "Try asking:" | Label above the starter prompt chips. |
-| apiEndpoint | string | undefined | API path passed to the AI SDK chat hook. |
-| initialOpen | boolean | false | Whether the window starts open. |
-| themeMode | "auto" \| "light" \| "dark" | "auto" | Forces light or dark mode, or follows the system. |
-| classNames | { wrapper?: string; trigger?: string; window?: string; header?: string } | undefined | Extra class names for parts of the widget. |
-| theme | ChatbotTheme | undefined | Theme overrides for colors. |
-| onError | (error: Error) => void | undefined | Called when the chat hook reports an error. |
+| title | `string` | `"Ask AI Assistant"` | Header title. |
+| subtitle | `string` | `"Trained on custom project data and experience"` | Header subtitle. |
+| triggerText | `string` | `"Ask AI"` | Label shown on the floating trigger button. |
+| triggerIcon | `ReactNode` | inline SVG | Custom trigger icon. |
+| sendIcon | `ReactNode` | inline SVG | Custom send button icon. |
+| closeIcon | `ReactNode` | inline SVG | Custom close button icon. |
+| position | `"bottom-right" \| "bottom-left" \| "top-right" \| "top-left"` | `"bottom-right"` | Placement of the floating widget. |
+| starterPrompts | `string[]` | three default prompts | Chips shown when the conversation is empty. |
+| emptyStateText | `string` | default welcome message | Copy shown in the empty state. |
+| placeholder | `string` | `"Ask a question..."` | Input placeholder. |
+| starterPromptsLabel | `string` | `"Try asking:"` | Label above the starter prompt chips. |
+| apiEndpoint | `string` | `undefined` | API path passed to the AI SDK chat hook. |
+| initialOpen | `boolean` | `false` | Whether the window starts open. |
+| themeMode | `"auto" \| "light" \| "dark"` | `"auto"` | Forces light or dark mode, or follows the system. |
+| classNames | `{ wrapper?: string; trigger?: string; window?: string; header?: string }` | `undefined` | Extra class names for parts of the widget. |
+| theme | `ChatbotTheme` | `undefined` | Theme overrides for colors. |
+| onError | `(error: Error) => void` | `undefined` | Called when the chat hook reports an error. |
 
 ---
 
 ## Theme API
 
-The theme object supports the following color overrides.
+The theme object supports flat color tokens and optional light/dark overrides. The component injects CSS custom properties such as `--cb-primary`, `--cb-bg`, and `--cb-border`, and uses `--cb-light-*` / `--cb-dark-*` fallbacks when `light` or `dark` tokens are provided.
 
 | Property | Type | Default | Description |
 | --- | --- | --- | --- |
-| primaryColor | string | undefined | Accent color for buttons and user bubbles. |
-| primaryForeground | string | undefined | Text color on primary-colored elements. |
-| background | string | undefined | Main chat window background. |
-| foreground | string | undefined | Text color in the chat window. |
-| mutedBackground | string | undefined | Background for bot messages, input, and chips. |
-| mutedForeground | string | undefined | Secondary text color. |
-| borderColor | string | undefined | Border color for inputs and prompt chips. |
+| primaryColor | `string` | `undefined` | Accent color for buttons, header, and user bubbles. |
+| primaryForeground | `string` | `undefined` | Text color on primary-colored elements. |
+| background | `string` | `undefined` | Main chat window background. |
+| foreground | `string` | `undefined` | Text color in the chat window. |
+| mutedBackground | `string` | `undefined` | Background for bot messages, input, and chips. |
+| mutedForeground | `string` | `undefined` | Secondary text color. |
+| borderColor | `string` | `undefined` | Border color for inputs and prompt chips. |
+| light | `ChatbotThemeTokens` | `undefined` | Optional token overrides for light mode. |
+| dark | `ChatbotThemeTokens` | `undefined` | Optional token overrides for dark mode. |
 
 Example:
 
@@ -318,6 +348,14 @@ Example:
     mutedBackground: "#f8fafc",
     mutedForeground: "#64748b",
     borderColor: "#e2e8f0",
+    light: {
+      primaryColor: "#2563eb",
+      background: "#ffffff",
+    },
+    dark: {
+      primaryColor: "#60a5fa",
+      background: "#111827",
+    },
   }}
 />
 ```
@@ -330,15 +368,15 @@ The server helper returns a Next.js route handler that streams AI responses. It 
 
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
-| model | LanguageModel | required | The AI model instance passed to the AI SDK. |
-| systemPrompt | string | "You are a helpful AI assistant." | Base instruction for the model. |
-| maxMessages | number | 6 | How many recent messages are included in the request. |
-| rag | { embeddings; provider; topK? } | undefined | Optional retrieval configuration. |
-| rag.embeddings | EmbeddedChunk[] | required when rag is used | The embeddings index loaded from JSON. |
-| rag.provider | EmbeddingProvider | required when rag is used | An embedding provider instance, such as googleEmbedding(). |
-| rag.topK | number | 3 | Number of chunks to retrieve for context. |
+| model | `LanguageModel` | required | The AI model instance passed to the AI SDK. |
+| systemPrompt | `string` | `"You are a helpful AI assistant."` | Base instruction for the model. |
+| maxMessages | `number` | `6` | How many recent messages are included in the request. |
+| rag | `{ embeddings; provider; topK? }` | `undefined` | Optional retrieval configuration. |
+| rag.embeddings | `EmbeddedChunk[]` | required when `rag` is used | The embeddings index loaded from JSON. |
+| rag.provider | `EmbeddingProvider` | required when `rag` is used | An embedding provider instance, such as `googleEmbedding()`. |
+| rag.topK | `number` | `3` | Number of chunks to retrieve for context. |
 
-There is no `minScore` option in the current implementation. Retrieval uses `rag.topK` only.
+The current implementation does not expose a `minScore` option; retrieval is controlled by `rag.topK` only.
 
 ### Route behavior
 
@@ -369,6 +407,21 @@ chatbot/
 ---
 
 ## Examples
+
+### Compound components
+
+Use the attached members on the `Chatbot` export when you want to compose the widget from smaller pieces.
+
+```tsx
+<Chatbot.Root apiEndpoint="/api/chat" initialOpen={false}>
+  <Chatbot.Trigger text="Open help" />
+  <Chatbot.Window>
+    <Chatbot.Header title="Help Center" subtitle="Ask anything" />
+    <Chatbot.Messages />
+    <Chatbot.Input />
+  </Chatbot.Window>
+</Chatbot.Root>
+```
 
 ### Portfolio website
 
@@ -420,7 +473,11 @@ Use a compact theme and a custom starter prompt set to make the widget feel nati
   title="Product Assistant"
   subtitle="Helpful answers for your workspace"
   apiEndpoint="/api/chat"
-  starterPrompts={["How do I invite teammates?", "Where is billing?", "How do I export data?"]}
+  starterPrompts={[
+    "How do I invite teammates?",
+    "Where is billing?",
+    "How do I export data?",
+  ]}
 />
 ```
 
@@ -454,7 +511,7 @@ Use `themeMode="dark"` or `themeMode="light"` if you want to force the widget ap
 
 ### CLI errors
 
-The CLI expects a folder path and a supported provider flag. The current package implementation is wired for `--google` in the server entrypoint.
+The CLI expects a folder path and a supported provider flag. The current package implementation is wired for `--google` in the server entrypoint, while `--openai` is only parsed by the wrapper.
 
 ---
 

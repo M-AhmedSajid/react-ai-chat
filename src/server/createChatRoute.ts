@@ -48,13 +48,13 @@ export function createChatRoute({
     if (rag && lastUserMessage) {
       const userText = extractMessageText(lastUserMessage);
 
-      console.log(`\n🔍 [next-ai-chatbot] Extracted User Query: "${userText}"`);
+      // console.log(`\n🔍 [next-ai-chatbot] Extracted User Query: "${userText}"`);
 
       if (userText.trim()) {
         try {
-          console.log(
-            `⚙️ [next-ai-chatbot] Generating query embedding via provider...`,
-          );
+          // console.log(
+          //   `⚙️ [next-ai-chatbot] Generating query embedding via provider...`,
+          // );
 
           const topChunks = await retrieveContext({
             question: userText,
@@ -63,17 +63,17 @@ export function createChatRoute({
             topK: rag.topK ?? 3,
           });
 
-          console.log(
-            `\n📚 [next-ai-chatbot] Top Retrieved Chunks (${topChunks.length}):`,
-          );
+          // console.log(
+          //   `\n📚 [next-ai-chatbot] Top Retrieved Chunks (${topChunks.length}):`,
+          // );
           topChunks.forEach((chunk, index) => {
-            console.log(
-              `   [${index + 1}] File/ID: ${chunk.id || chunk.source}`,
-            );
-            console.log(`       Score: ${chunk.score?.toFixed(4) ?? "N/A"}`);
-            console.log(
-              `       Preview: "${chunk.text.slice(0, 80).replace(/\n/g, " ")}..."`,
-            );
+            // console.log(
+            //   `   [${index + 1}] File/ID: ${chunk.id || chunk.source}`,
+            // );
+            // console.log(`       Score: ${chunk.score?.toFixed(4) ?? "N/A"}`);
+            // console.log(
+            //   `       Preview: "${chunk.text.slice(0, 80).replace(/\n/g, " ")}..."`,
+            // );
           });
 
           contextString = formatContext(topChunks);
@@ -84,9 +84,9 @@ export function createChatRoute({
           );
         }
       } else {
-        console.log(
-          "⚠️ [next-ai-chatbot] Last user message text was empty or space-only.",
-        );
+        // console.log(
+        //   "⚠️ [next-ai-chatbot] Last user message text was empty or space-only.",
+        // );
       }
     }
 
@@ -94,10 +94,10 @@ export function createChatRoute({
       ? `${systemPrompt}\n\nYou are provided with reference documents.\n\nBase every factual answer on these references.\n\nIf the answer cannot be found in the references, clearly say you don't have enough information instead of guessing.\n\n=== REFERENCES ===\n${contextString}\n==================`
       : systemPrompt;
 
-    console.log("\n📝 [next-ai-chatbot] System Prompt Sent to Model:");
-    console.log("------------------------------------------------");
-    console.log(finalSystemPrompt);
-    console.log("------------------------------------------------\n");
+    // console.log("\n📝 [next-ai-chatbot] System Prompt Sent to Model:");
+    // console.log("------------------------------------------------");
+    // console.log(finalSystemPrompt);
+    // console.log("------------------------------------------------\n");
 
     const modelMessages = await convertToModelMessages(recentMessages);
 

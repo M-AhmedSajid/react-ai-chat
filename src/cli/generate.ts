@@ -11,9 +11,9 @@ export async function generateEmbeddings(
 
   for (let i = 0; i < total; i++) {
     const chunk = chunks[i];
-    console.log(
-      `Embedding ${i + 1}/${total} (${chunk.id}) via ${provider.name}`,
-    );
+    // console.log(
+    //   `Embedding ${i + 1}/${total} (${chunk.id}) via ${provider.name}`,
+    // );
 
     const vector = await provider.embed(chunk.text);
 
@@ -43,5 +43,5 @@ export async function saveIndex(
     JSON.stringify(embeddings, null, 2),
     "utf-8",
   );
-  console.log(`Saved index to ${absolutePath}`);
+  // console.log(`Saved index to ${absolutePath}`);
 }

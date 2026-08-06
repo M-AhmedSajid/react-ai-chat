@@ -5,39 +5,39 @@
   right: 1.5rem;
   z-index: 30;
 
-  --cb-primary: #18181b;
-  --cb-primary-fg: #ffffff;
-  --cb-bg: #ffffff;
-  --cb-fg: #18181b;
-  --cb-muted-bg: #f4f4f5;
-  --cb-muted-fg: #71717a;
-  --cb-border: #e4e4e7;
+  /* Default CSS Fallbacks */
+  --cb-primary: var(--cb-light-primary, #18181b);
+  --cb-primary-fg: var(--cb-light-primary-fg, #ffffff);
+  --cb-bg: var(--cb-light-bg, #ffffff);
+  --cb-fg: var(--cb-light-fg, #18181b);
+  --cb-muted-bg: var(--cb-light-muted-bg, #f4f4f5);
+  --cb-muted-fg: var(--cb-light-muted-fg, #71717a);
+  --cb-border: var(--cb-light-border, #e4e4e7);
 }
 
 /* Explicit Dark Mode (via next-themes, tailwind .dark, or data-theme attribute) */
-/* Dark mode */
 :global(.dark) .wrapper,
 :global([data-theme="dark"]) .wrapper,
 .wrapper[data-theme="dark"] {
-  --cb-primary: #fafafa;
-  --cb-primary-fg: #18181b;
-  --cb-bg: #18181b;
-  --cb-fg: #fafafa;
-  --cb-muted-bg: #27272a;
-  --cb-muted-fg: #a1a1aa;
-  --cb-border: #3f3f46;
+  --cb-primary: var(--cb-dark-primary, #fafafa);
+  --cb-primary-fg: var(--cb-dark-primary-fg, #18181b);
+  --cb-bg: var(--cb-dark-bg, #18181b);
+  --cb-fg: var(--cb-dark-fg, #fafafa);
+  --cb-muted-bg: var(--cb-dark-muted-bg, #27272a);
+  --cb-muted-fg: var(--cb-dark-muted-fg, #a1a1aa);
+  --cb-border: var(--cb-dark-border, #3f3f46);
 }
 
 /* System preference fallback */
 @media (prefers-color-scheme: dark) {
   :global(:root:not(.light)) .wrapper:not([data-theme="light"]) {
-    --cb-primary: #fafafa;
-    --cb-primary-fg: #18181b;
-    --cb-bg: #18181b;
-    --cb-fg: #fafafa;
-    --cb-muted-bg: #27272a;
-    --cb-muted-fg: #a1a1aa;
-    --cb-border: #3f3f46;
+    --cb-primary: var(--cb-dark-primary, #fafafa);
+    --cb-primary-fg: var(--cb-dark-primary-fg, #18181b);
+    --cb-bg: var(--cb-dark-bg, #18181b);
+    --cb-fg: var(--cb-dark-fg, #fafafa);
+    --cb-muted-bg: var(--cb-dark-muted-bg, #27272a);
+    --cb-muted-fg: var(--cb-dark-muted-fg, #a1a1aa);
+    --cb-border: var(--cb-dark-border, #3f3f46);
   }
 }
 

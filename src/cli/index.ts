@@ -8,18 +8,18 @@ export async function createIndex({
   documentsPath = "./content",
   outputPath = "./chatbot/embeddings.json",
 }: CreateIndexOptions) {
-  console.log(`Loading documents from ${documentsPath}...`);
+  // console.log(`Loading documents from ${documentsPath}...`);
   const documents = await loadDocuments(documentsPath);
-  console.log(`Found ${documents.length} document(s).`);
+  // console.log(`Found ${documents.length} document(s).`);
 
   const chunks = chunkDocuments(documents);
-  console.log(`Created ${chunks.length} total chunk(s).\n`);
+  // console.log(`Created ${chunks.length} total chunk(s).\n`);
 
-  console.log(`Generating embeddings using provider: ${provider.name}...`);
+  // console.log(`Generating embeddings using provider: ${provider.name}...`);
   const embeddings = await generateEmbeddings(chunks, provider);
 
-  console.log("\nSaving index file...");
+  // console.log("\nSaving index file...");
   await saveIndex(outputPath, embeddings);
 
-  console.log("Indexing complete!");
+  // console.log("Indexing complete!");
 }
