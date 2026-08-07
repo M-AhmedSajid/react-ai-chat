@@ -1,10 +1,13 @@
 {
   "name": "next-ai-chatbot",
-  "version": "1.0.1",
-  "description": "",
+  "version": "1.1.0",
+  "description": "Plug-and-play AI chatbot for Next.js with RAG support.",
   "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
   "exports": {
-    "./client": {
+    ".": {
       "types": "./dist/client/index.d.ts",
       "import": "./dist/client/index.mjs",
       "require": "./dist/client/index.js"
@@ -28,35 +31,64 @@
     "build": "tsdown",
     "prepack": "npm run build"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "nextjs",
+    "ai",
+    "chatbot",
+    "rag",
+    "llm",
+    "ai-sdk",
+    "embeddings",
+    "vector-search",
+    "google-ai",
+    "openai",
+    "react",
+    "next-ai-chatbot"
+  ],
+  "author": "Muhammad Ahmed Sajid <ahmedsajid1506@gmail.com>",
+  "license": "MIT",
   "dependencies": {
-    "@google/genai": "^2.15.0",
+    "@ai-sdk/react": "^4.0.58",
+    "ai": "^7.0.55",
     "dotenv": "^17.4.2",
     "glob": "^13.0.6",
-    "gray-matter": "^4.0.3"
+    "gray-matter": "^4.0.3",
+    "react-markdown": "^10.1.0"
   },
   "peerDependencies": {
-    "@ai-sdk/react": "^4",
-    "ai": "^7.0.0",
+    "@google/genai": "^2",
     "next": "^15 || ^16",
+    "openai": "^5",
     "react": "^18 || ^19",
-    "react-dom": "^18 || ^19",
-    "react-markdown": "^10"
+    "react-dom": "^18 || ^19"
+  },
+  "peerDependenciesMeta": {
+    "@google/genai": {
+      "optional": true
+    },
+    "openai": {
+      "optional": true
+    }
   },
   "devDependencies": {
-    "@ai-sdk/google": "^4",
-    "@ai-sdk/react": "^4",
-    "@tsdown/css": "^0.22.14",
     "@types/node": "^26.1.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "next": "^16.0.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-markdown": "^10.1.0",
     "tsdown": "^0.22.14",
+    "@tsdown/css": "^0.22.14",
     "typescript": "^5.9.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/M-AhmedSajid/next-ai-chatbot.git"
+  },
+  "homepage": "https://github.com/M-AhmedSajid/next-ai-chatbot#readme",
+  "bugs": {
+    "url": "https://github.com/M-AhmedSajid/next-ai-chatbot/issues"
   }
 }

@@ -1,544 +1,614 @@
 # next-ai-chatbot
 
-A TypeScript-first chatbot package for Next.js apps. It provides a client-side chat widget, a server route helper for AI SDK streaming, and a CLI for generating document embeddings from local Markdown and text files.
+A complete AI chatbot toolkit for Next.js with RAG, embeddings, and streaming.
 
-- Floating chat UI with starter prompts, empty state, and input form
-- Streaming responses via the AI SDK route helper
-- Optional Retrieval-Augmented Generation (RAG) with embeddings JSON
-- CLI indexing for Markdown and text files
-- Theme customization with light/dark overrides and CSS variable injection
-- Markdown rendering in chat messages
-- TypeScript support for the client and server entrypoints
+next-ai-chatbot gives you the building blocks for adding a polished chatbot experience to a Next.js app without turning your project into a hosted chatbot service. It combines a client-side chatbot UI, a server route helper, a local document indexing CLI, and an embedding provider layer for retrieval-augmented generation (RAG).
+
+The package is currently focused on Next.js, but the core pieces are reusable building blocks for modern React-based AI experiences. It is a practical fit for Next.js developers, portfolio owners, SaaS founders, and anyone learning how AI chat experiences are built around real content.
+
+## Table of contents
+
+- [Demo](#demo)
+- [Features](#features)
+- [How it works](#how-it-works)
+- [Installation](#installation)
+- [Quick start](#quick-start)
+- [How RAG works internally](#how-rag-works-internally)
+- [CLI documentation](#cli-documentation)
+- [Providers](#providers)
+- [API reference](#api-reference)
+- [Why next-ai-chatbot?](#why-next-ai-chatbot)
+- [Project ideas](#project-ideas)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Demo
 
-[![next-ai-chatbot Demo](https://img.youtube.com/vi/YZPEbH7LYpE/maxresdefault.jpg)](https://www.youtube.com/watch?v=YZPEbH7LYpE)
+The following video shows the chatbot integrated into a portfolio website:
 
-## Table of Contents
-
-- [Features](#features)
-- [Installation](#installation)
-- [Quick Start](#quick-start)
-- [Compound Components](#compound-components)
-- [Basic Chatbot](#basic-chatbot)
-- [RAG](#rag)
-- [CLI](#cli)
-- [Chatbot Component API](#chatbot-component-api)
-- [Theme API](#theme-api)
-- [createChatRoute()](#createchatroute)
-- [Folder Structure](#folder-structure)
-- [Examples](#examples)
-- [Troubleshooting](#troubleshooting)
-- [FAQ](#faq)
-- [License](#license)
-
----
+https://www.youtube.com/watch?v=YZPEbH7LYpE
 
 ## Features
 
-- Floating chatbot widget with a trigger button, header, window, message list, and input form.
-- Starter prompts and an empty-state message shown before the first user turn.
-- Message rendering with `react-markdown`.
-- Theme support through `theme`, `themeMode`, and `classNames` props, with CSS custom properties injected for light and dark variations.
-- A server route helper that streams responses from an AI model while optionally retrieving context chunks for RAG.
-- A CLI that scans Markdown and text files, chunks them, generates embeddings, and writes an embeddings JSON index.
-- Compound component exports on the main `Chatbot` export: `Chatbot.Root`, `Chatbot.Trigger`, `Chatbot.Window`, `Chatbot.Header`, `Chatbot.Messages`, and `Chatbot.Input`.
+- Streaming AI chat responses through the AI SDK
+- Next.js route handler integration with a simple server helper
+- RAG support for grounding responses in local documents
+- Local document indexing from Markdown and text files
+- Embedding provider architecture for custom embedding backends
+- Google embeddings via the Google GenAI SDK
+- OpenAI embeddings via the OpenAI SDK
+- AI SDK-compatible model support through the `model` argument
+- Custom system prompts
+- Context retrieval and context injection for prompts
+- A client-side chatbot widget with starter prompts and theme customization options
 
----
+## How it works
+
+The package follows a straightforward RAG workflow:
+
+Documents
+↓
+CLI indexing
+↓
+Embeddings generation
+↓
+Stored embedding index
+↓
+Semantic retrieval
+↓
+Context injection
+↓
+AI response
+
+In practice, you point the CLI at a folder of Markdown or text files, generate embeddings for those documents, save the embedding index, and then use the route helper to retrieve the most relevant chunks at request time before streaming the answer.
 
 ## Installation
 
-Install the package:
+Install the package in your app:
 
 ```bash
 npm install next-ai-chatbot
 ```
 
-Install the peer dependencies required by the client and server helpers:
+Optional provider SDKs are required for embedding generation:
 
 ```bash
-npm install next react react-dom ai @ai-sdk/react react-markdown
+npm install @google/genai
 ```
-
-If you want to use Google models in the examples below, install the Google provider package as well:
 
 ```bash
-npm install @ai-sdk/google
+npm install openai
 ```
 
----
+### Environment variables
 
-## Quick Start
+The CLI and provider helpers expect the following environment variables when you use the corresponding providers:
 
-1. Install the package and required peers.
-2. Create an API route.
-3. Render the chatbot component.
-4. Ask a question.
+- `GOOGLE_GENERATIVE_AI_API_KEY` for Google embeddings
+- `OPENAI_API_KEY` for OpenAI embeddings
 
-### 1. Create an API route
+If you are using the CLI locally, set the relevant variable in your shell before running the command:
 
-Create an API route such as `app/api/chat/route.ts` in a Next.js app router project:
+```bash
+export GOOGLE_GENERATIVE_AI_API_KEY=your-key
+```
+
+```bash
+export OPENAI_API_KEY=your-key
+```
+
+## Quick start
+
+This section walks through the package from the simplest possible setup to a full RAG-enabled chatbot route.
+
+### 1. Simplest chatbot setup
+
+Create a route handler that streams a response with a model instance:
 
 ```ts
+// app/api/chat/route.ts
 import { createChatRoute } from "next-ai-chatbot/server";
-import { google } from "@ai-sdk/google";
 
 export const POST = createChatRoute({
-  model: google("gemini-2.0-flash"),
-  systemPrompt: "You are a helpful assistant.",
+  model: yourModel,
 });
 ```
 
-### 2. Render the component
+The example above is the minimal setup. It creates a POST handler that accepts chat messages, converts them into the AI SDK message format, and streams the response back to the client.
 
-Create a client component:
+### 2. Configuration options for createChatRoute()
+
+The `createChatRoute()` helper accepts the following options:
+
+```ts
+createChatRoute({
+  model,
+  systemPrompt,
+  maxMessages,
+  rag,
+});
+```
+
+- `model` (required): an AI SDK-compatible language model instance.
+- `systemPrompt` (optional): a custom system prompt. The default value is `You are a helpful AI assistant.`
+- `maxMessages` (optional): how many recent messages are included from the conversation history. The default is `6`.
+- `rag` (optional): an object with `index`, `provider`, and `topK` for retrieval-augmented generation.
+
+### 3. Add the chatbot UI
+
+The package also exports a client-side chatbot widget:
 
 ```tsx
-"use client";
-
-import { Chatbot } from "next-ai-chatbot/client";
+import { Chatbot } from "next-ai-chatbot";
 
 export default function ChatWidget() {
   return (
     <Chatbot
-      title="Support Assistant"
-      subtitle="Ask me anything about the product"
       apiEndpoint="/api/chat"
+      title="Ask me anything"
+      subtitle="Built with next-ai-chatbot"
     />
   );
 }
 ```
 
-### 3. Ask a question
+This component is designed to work with your route handler through the `apiEndpoint` prop.
 
-Open the page and use the floating widget. The component will send the message to your route and stream the response back.
+### 4. Complete RAG example
 
----
-
-## Compound Components
-
-The main `Chatbot` export also exposes compound component members attached to the object: `Chatbot.Root`, `Chatbot.Trigger`, `Chatbot.Window`, `Chatbot.Header`, `Chatbot.Messages`, and `Chatbot.Input`.
-
-```tsx
-"use client";
-
-import { Chatbot } from "next-ai-chatbot/client";
-
-export default function CustomChatLayout() {
-  return (
-    <Chatbot.Root apiEndpoint="/api/chat" position="bottom-right">
-      <Chatbot.Trigger text="Need help?" />
-      <Chatbot.Window>
-        <Chatbot.Header
-          title="Support Center"
-          subtitle="Ask about setup or usage"
-        />
-        <Chatbot.Messages />
-        <Chatbot.Input />
-      </Chatbot.Window>
-    </Chatbot.Root>
-  );
-}
-```
-
----
-
-## Basic Chatbot
-
-A basic chatbot needs only a model and a system prompt. This is the minimum setup for a non-RAG assistant.
-
-### API route
+After you create an embeddings index, you can inject retrieved context into the prompt before streaming an answer.
 
 ```ts
-import { createChatRoute } from "next-ai-chatbot/server";
-import { google } from "@ai-sdk/google";
-
-export const POST = createChatRoute({
-  model: google("gemini-2.0-flash"),
-  systemPrompt: "You are a concise support assistant.",
-});
-```
-
-### Chatbot component
-
-```tsx
-"use client";
-
-import { Chatbot } from "next-ai-chatbot/client";
-
-export default function BasicChatbot() {
-  return (
-    <Chatbot
-      title="Ask the Team"
-      subtitle="Useful for support and product questions"
-      apiEndpoint="/api/chat"
-      starterPrompts={[
-        "What does this product do?",
-        "How do I get started?",
-      ]}
-    />
-  );
-}
-```
-
----
-
-## RAG
-
-The package does not include a built-in document store. Instead, you generate an embeddings index from local files and load it into the route at runtime.
-
-### 1. Create a content folder
-
-Create a folder with Markdown or text files:
-
-```text
-content/
-  overview.md
-  pricing.md
-```
-
-Example content file:
-
-```md
-# Product Overview
-
-This product ships with a chat widget and a CLI for indexing local docs.
-```
-
-### 2. Run the CLI
-
-Generate an embeddings file:
-
-```bash
-npx next-ai-chatbot index ./content --google --output ./chatbot/embeddings.json
-```
-
-The CLI will:
-
-- read files from the input folder,
-- load Markdown and text files,
-- split them into chunks,
-- generate embeddings with the selected provider,
-- save the result to the output path.
-
-### 3. Import the generated embeddings
-
-In your route file, load the generated JSON file:
-
-```ts
+// app/api/chat/route.ts
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { createChatRoute, googleEmbedding } from "next-ai-chatbot/server";
-import { google } from "@ai-sdk/google";
-import embeddings from "@/chatbot/embeddings.json";
+import { GoogleGenAI } from "@google/genai";
+
+const googleClient = new GoogleGenAI({
+  apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY!,
+});
+
+const provider = googleEmbedding(googleClient);
+
+const index = JSON.parse(
+  await readFile(path.join(process.cwd(), "chatbot/embeddings.json"), "utf8"),
+);
 
 export const POST = createChatRoute({
-  model: google("gemini-2.0-flash"),
-  systemPrompt: "Answer using the supplied references when possible.",
+  model: yourModel,
+  systemPrompt: "You are a helpful assistant for my content library.",
+  maxMessages: 8,
   rag: {
-    embeddings,
-    provider: googleEmbedding(),
-    topK: 3,
+    index,
+    provider,
+    topK: 5,
   },
 });
 ```
 
-### 4. Configure `createChatRoute()`
+### What happens in this RAG flow
 
-The RAG block is optional. When present, the route extracts the last user message, generates a query embedding, retrieves the strongest matching chunks, and injects them into the system prompt.
+- The latest user message is extracted from the conversation.
+- The route helper creates an embedding for that message using the configured provider.
+- The package compares the query embedding against the stored document embeddings.
+- The most relevant chunks are retrieved and formatted into a context block.
+- That context is injected into the model prompt before the response is streamed.
 
----
+## How RAG works internally
 
-## CLI
+This section explains the implementation details of the indexing and retrieval flow that powers the package.
 
-The package ships one CLI command:
+### 1. Document loading
+
+The CLI loads documents from a target directory and only considers Markdown and text files. The loader uses the file path as the document ID and reads the file contents from disk.
+
+The matching file types are:
+
+- `.md`
+- `.txt`
+
+Frontmatter is parsed with `gray-matter`, and the trimmed content is used as the document text.
+
+### 2. Chunking
+
+Once documents are loaded, the content is split into chunks. The implementation uses a default chunk size of `1000` characters and an overlap of `200` characters.
+
+Each chunk receives:
+
+- an ID in the form `document-id#chunk-number`
+- the source document path
+- the chunk number
+- the chunk text
+
+This helps preserve context across nearby sections while keeping retrieval focused.
+
+### 3. Embedding generation
+
+Each chunk is sent to the selected embedding provider. The provider returns a numeric vector that represents the text semantics.
+
+The package stores the embedding along with the chunk metadata in a structured index object.
+
+### 4. Embedding storage
+
+The CLI writes the generated index to JSON. The saved index includes:
+
+- the provider name
+- the provider model name
+- the embedding dimensions
+- the list of embedded chunks
+
+The output file is written by default to `./chatbot/embeddings.json` unless you override it with `--output` or `-o`.
+
+### 5. Query embedding
+
+When the chat route receives a request, it extracts the last user message and creates an embedding for that text using the same provider that was used to build the index.
+
+This ensures that the stored chunk vectors and the query vector are compatible.
+
+### 6. Cosine similarity retrieval
+
+Once the query embedding is available, the package compares it against every stored embedding using cosine similarity. The highest-scoring chunks are selected.
+
+The default retrieval size is `3`, but you can change it with `rag.topK`.
+
+### 7. Context injection into the model
+
+The retrieved chunks are formatted into a context block and attached to the system prompt before the model is called. The helper adds instructions that tell the model to rely on those references and to say when it does not have enough information.
+
+That is the core RAG experience: search relevant content, inject the relevant text, and let the model answer from that context.
+
+## CLI documentation
+
+The package ships with a CLI for indexing local documents into an embedding index.
+
+### Command syntax
 
 ```bash
-npx next-ai-chatbot index [documentsPath] [options]
+npx next-ai-chatbot [path] [--provider <name>] [--output <path>]
 ```
 
-### What it does
+You can also use the explicit `index` form:
 
-The command loads the provided folder, scans for Markdown and text files, chunks each document, generates embeddings with the selected provider, and writes a JSON file.
-
-### Supported file types
-
-The implementation currently reads files matching this glob pattern:
-
-```text
-**/*.{md,txt}
+```bash
+npx next-ai-chatbot index ./content --google
 ```
 
-### Options
+### Supported flags
 
-- `--google` uses the built-in Google embedding provider.
-- `--openai` is accepted by the CLI wrapper, but the current server entrypoint in this repository exposes the Google provider through `googleEmbedding()`.
-- `-o, --output <path>` sets a custom output path.
+- `--google` selects the Google embedding provider
+- `--openai` selects the OpenAI embedding provider
+- `--provider <name>` selects a provider by name
+- `--output <path>` or `-o <path>` sets the output file path
 
-### Default paths
+### Examples
 
-If you do not pass an explicit input path, the CLI uses `./content`.
-If you do not pass `--output` or `-o`, the embeddings file is written to:
+#### Google provider
+
+```bash
+npx next-ai-chatbot ./content --google
+```
+
+#### OpenAI provider
+
+```bash
+npx next-ai-chatbot ./content --openai
+```
+
+#### Explicit provider flag
+
+```bash
+npx next-ai-chatbot ./content --provider google
+```
+
+### Output file behavior
+
+The CLI writes an embeddings JSON file to disk. By default, the output path is:
 
 ```text
 ./chatbot/embeddings.json
 ```
 
-### Internal behavior
+You can override it with:
 
-The CLI calls the same indexing pipeline used by the library:
-
-1. load documents from the input folder,
-2. split them into chunks,
-3. generate embeddings with the selected provider,
-4. save the result as JSON.
-
----
-
-## Chatbot Component API
-
-The component props come from the exported interface in the package.
-
-| Property | Type | Default | Description |
-| --- | --- | --- | --- |
-| title | `string` | `"Ask AI Assistant"` | Header title. |
-| subtitle | `string` | `"Trained on custom project data and experience"` | Header subtitle. |
-| triggerText | `string` | `"Ask AI"` | Label shown on the floating trigger button. |
-| triggerIcon | `ReactNode` | inline SVG | Custom trigger icon. |
-| sendIcon | `ReactNode` | inline SVG | Custom send button icon. |
-| closeIcon | `ReactNode` | inline SVG | Custom close button icon. |
-| position | `"bottom-right" \| "bottom-left" \| "top-right" \| "top-left"` | `"bottom-right"` | Placement of the floating widget. |
-| starterPrompts | `string[]` | three default prompts | Chips shown when the conversation is empty. |
-| emptyStateText | `string` | default welcome message | Copy shown in the empty state. |
-| placeholder | `string` | `"Ask a question..."` | Input placeholder. |
-| starterPromptsLabel | `string` | `"Try asking:"` | Label above the starter prompt chips. |
-| apiEndpoint | `string` | `undefined` | API path passed to the AI SDK chat hook. |
-| initialOpen | `boolean` | `false` | Whether the window starts open. |
-| themeMode | `"auto" \| "light" \| "dark"` | `"auto"` | Forces light or dark mode, or follows the system. |
-| classNames | `{ wrapper?: string; trigger?: string; window?: string; header?: string }` | `undefined` | Extra class names for parts of the widget. |
-| theme | `ChatbotTheme` | `undefined` | Theme overrides for colors. |
-| onError | `(error: Error) => void` | `undefined` | Called when the chat hook reports an error. |
-
----
-
-## Theme API
-
-The theme object supports flat color tokens and optional light/dark overrides. The component injects CSS custom properties such as `--cb-primary`, `--cb-bg`, and `--cb-border`, and uses `--cb-light-*` / `--cb-dark-*` fallbacks when `light` or `dark` tokens are provided.
-
-| Property | Type | Default | Description |
-| --- | --- | --- | --- |
-| primaryColor | `string` | `undefined` | Accent color for buttons, header, and user bubbles. |
-| primaryForeground | `string` | `undefined` | Text color on primary-colored elements. |
-| background | `string` | `undefined` | Main chat window background. |
-| foreground | `string` | `undefined` | Text color in the chat window. |
-| mutedBackground | `string` | `undefined` | Background for bot messages, input, and chips. |
-| mutedForeground | `string` | `undefined` | Secondary text color. |
-| borderColor | `string` | `undefined` | Border color for inputs and prompt chips. |
-| light | `ChatbotThemeTokens` | `undefined` | Optional token overrides for light mode. |
-| dark | `ChatbotThemeTokens` | `undefined` | Optional token overrides for dark mode. |
-
-Example:
-
-```tsx
-<Chatbot
-  apiEndpoint="/api/chat"
-  theme={{
-    primaryColor: "#2563eb",
-    primaryForeground: "#ffffff",
-    background: "#ffffff",
-    foreground: "#0f172a",
-    mutedBackground: "#f8fafc",
-    mutedForeground: "#64748b",
-    borderColor: "#e2e8f0",
-    light: {
-      primaryColor: "#2563eb",
-      background: "#ffffff",
-    },
-    dark: {
-      primaryColor: "#60a5fa",
-      background: "#111827",
-    },
-  }}
-/>
+```bash
+npx next-ai-chatbot ./content --google --output ./my-index/embeddings.json
 ```
 
----
+### Input path behavior
 
-## createChatRoute()
-
-The server helper returns a Next.js route handler that streams AI responses. It accepts a single options object.
-
-| Option | Type | Default | Description |
-| --- | --- | --- | --- |
-| model | `LanguageModel` | required | The AI model instance passed to the AI SDK. |
-| systemPrompt | `string` | `"You are a helpful AI assistant."` | Base instruction for the model. |
-| maxMessages | `number` | `6` | How many recent messages are included in the request. |
-| rag | `{ embeddings; provider; topK? }` | `undefined` | Optional retrieval configuration. |
-| rag.embeddings | `EmbeddedChunk[]` | required when `rag` is used | The embeddings index loaded from JSON. |
-| rag.provider | `EmbeddingProvider` | required when `rag` is used | An embedding provider instance, such as `googleEmbedding()`. |
-| rag.topK | `number` | `3` | Number of chunks to retrieve for context. |
-
-The current implementation does not expose a `minScore` option; retrieval is controlled by `rag.topK` only.
-
-### Route behavior
-
-When RAG is enabled, the route:
-
-1. finds the last user message,
-2. generates a query embedding with the provider,
-3. retrieves the top matching chunks,
-4. injects them into the system prompt.
-
----
-
-## Folder Structure
-
-A simple structure for a RAG-powered app looks like this:
+If no positional path is provided, the CLI uses:
 
 ```text
-app/
-  api/chat/route.ts
-  page.tsx
-content/
-  overview.md
-  pricing.md
-chatbot/
-  embeddings.json
+./content
 ```
 
----
+### Environment variable setup for the CLI
 
-## Examples
+Before running the CLI, make sure the appropriate environment variable is set:
 
-### Compound components
-
-Use the attached members on the `Chatbot` export when you want to compose the widget from smaller pieces.
-
-```tsx
-<Chatbot.Root apiEndpoint="/api/chat" initialOpen={false}>
-  <Chatbot.Trigger text="Open help" />
-  <Chatbot.Window>
-    <Chatbot.Header title="Help Center" subtitle="Ask anything" />
-    <Chatbot.Messages />
-    <Chatbot.Input />
-  </Chatbot.Window>
-</Chatbot.Root>
+```bash
+export GOOGLE_GENERATIVE_AI_API_KEY=your-key
 ```
 
-### Portfolio website
+or:
 
-Use the widget with a short system prompt and a custom title to present your work.
-
-```tsx
-<Chatbot
-  title="About Me"
-  subtitle="Ask about my work and background"
-  apiEndpoint="/api/chat"
-/>
+```bash
+export OPENAI_API_KEY=your-key
 ```
 
-### Company website
+### What the CLI does internally
 
-Use a support-oriented prompt with a branded theme.
+The CLI:
 
-```tsx
-<Chatbot
-  title="Support"
-  subtitle="Questions about products and onboarding"
-  apiEndpoint="/api/chat"
-  theme={{ primaryColor: "#2563eb" }}
-/>
+1. Loads Markdown and text files from the provided directory.
+2. Reads frontmatter and extracts document content.
+3. Splits content into chunks.
+4. Generates embeddings with the selected provider.
+5. Writes the resulting index as JSON.
+
+## Providers
+
+The embedding provider layer is intentionally simple. The package exposes factory helpers that wrap a provider-specific client and return the common embedding interface used by the rest of the package.
+
+### Google embedding provider
+
+#### Installation
+
+```bash
+npm install @google/genai
 ```
 
-### Documentation site
+#### Required environment variable
 
-Pair the widget with a RAG-enabled route so it can answer from docs stored in the repository.
+```bash
+export GOOGLE_GENERATIVE_AI_API_KEY=your-key
+```
+
+#### Initialization example
 
 ```ts
+import { GoogleGenAI } from "@google/genai";
+import { googleEmbedding } from "next-ai-chatbot/server";
+
+const client = new GoogleGenAI({
+  apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY!,
+});
+
+const provider = googleEmbedding(client);
+```
+
+#### When to use it
+
+Use the Google provider when you want to generate embeddings with the Google GenAI SDK and the corresponding API key is available in your environment.
+
+### OpenAI embedding provider
+
+#### Installation
+
+```bash
+npm install openai
+```
+
+#### Required environment variable
+
+```bash
+export OPENAI_API_KEY=your-key
+```
+
+#### Initialization example
+
+```ts
+import OpenAI from "openai";
+import { openAIEmbedding } from "next-ai-chatbot/server";
+
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY!,
+});
+
+const provider = openAIEmbedding(client);
+```
+
+#### When to use it
+
+Use the OpenAI provider when you want to generate embeddings through the OpenAI SDK and have an API key configured.
+
+## API reference
+
+### createChatRoute()
+
+#### Signature
+
+```ts
+createChatRoute({
+  model,
+  systemPrompt?,
+  maxMessages?,
+  rag?,
+})
+```
+
+#### Parameters
+
+- `model` (required): an AI SDK-compatible language model instance.
+- `systemPrompt` (optional): overrides the default system prompt.
+- `maxMessages` (optional): number of recent messages to include from the conversation history. Default: `6`.
+- `rag` (optional): configuration for retrieval-augmented generation.
+
+The `rag` object supports:
+
+- `index`: the embedding index JSON object produced by the CLI
+- `provider`: the embedding provider instance used to build the index
+- `topK` (optional): number of chunks to retrieve. Default: `3`
+
+#### Return value
+
+`createChatRoute()` returns an async handler function that accepts a `Request` and returns a streaming chat response.
+
+#### Example usage
+
+```ts
+import { createChatRoute } from "next-ai-chatbot/server";
+
 export const POST = createChatRoute({
-  model: google("gemini-2.0-flash"),
-  systemPrompt: "Answer using the documentation in the supplied references.",
-  rag: {
-    embeddings,
-    provider: googleEmbedding(),
-    topK: 3,
-  },
+  model: yourModel,
+  systemPrompt: "You are a helpful assistant.",
+  maxMessages: 6,
 });
 ```
 
-### SaaS dashboard
+### googleEmbedding()
 
-Use a compact theme and a custom starter prompt set to make the widget feel native to your product.
+#### Signature
 
-```tsx
-<Chatbot
-  title="Product Assistant"
-  subtitle="Helpful answers for your workspace"
-  apiEndpoint="/api/chat"
-  starterPrompts={[
-    "How do I invite teammates?",
-    "Where is billing?",
-    "How do I export data?",
-  ]}
-/>
+```ts
+googleEmbedding(client, options?)
 ```
 
----
+#### Parameters
+
+- `client` (required): a Google GenAI client instance with a `models.embedContent()` method.
+- `options` (optional): an object with a `model` property.
+
+If `options.model` is not supplied, the implementation uses the default model:
+
+```text
+gemini-embedding-001
+```
+
+#### Return value
+
+Returns an object that implements the package's embedding provider interface with:
+
+- `name`
+- `model`
+- `embed(text)`
+
+#### Example usage
+
+```ts
+import { GoogleGenAI } from "@google/genai";
+import { googleEmbedding } from "next-ai-chatbot/server";
+
+const client = new GoogleGenAI({
+  apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY!,
+});
+
+const provider = googleEmbedding(client, {
+  model: "gemini-embedding-001",
+});
+```
+
+### openAIEmbedding()
+
+#### Signature
+
+```ts
+openAIEmbedding(client, options?)
+```
+
+#### Parameters
+
+- `client` (required): an OpenAI client instance with an `embeddings.create()` method.
+- `options` (optional): an object with a `model` property.
+
+If `options.model` is not supplied, the implementation uses the default model:
+
+```text
+text-embedding-3-small
+```
+
+#### Return value
+
+Returns an object that implements the package's embedding provider interface with:
+
+- `name`
+- `model`
+- `embed(text)`
+
+#### Example usage
+
+```ts
+import OpenAI from "openai";
+import { openAIEmbedding } from "next-ai-chatbot/server";
+
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY!,
+});
+
+const provider = openAIEmbedding(client, {
+  model: "text-embedding-3-small",
+});
+```
+
+## Why next-ai-chatbot?
+
+Building a RAG chatbot from scratch usually means stitching together document loading, chunking, embeddings, retrieval, prompt formatting, and streaming yourself. This package gives you a focused starting point for those pieces without locking you into a hosted service.
+
+Compared with manually wiring everything up, next-ai-chatbot helps you move faster. Compared with hosted chatbot tools, it keeps the retrieval and indexing workflow inside your own project and lets you work with your own content.
+
+It is also helpful if you want to understand the moving parts of a chatbot stack before you move to a larger production system.
+
+## Project ideas
+
+Here are a few realistic ways to use the package:
+
+### Portfolio AI assistant
+
+Add a chatbot to your portfolio website so visitors can ask questions about your projects, experience, and available work.
+
+### Documentation chatbot
+
+Index your product docs, onboarding material, or help center articles and let users ask questions in plain language.
+
+### SaaS support chatbot
+
+Use the package to create a support assistant over internal knowledge articles or customer-facing documentation.
 
 ## Troubleshooting
 
 ### Missing API key
 
-The Google embedding provider reads `CHATBOT_EMBEDDING_API_KEY` or `GOOGLE_GENERATIVE_AI_API_KEY`. If neither is set, embedding generation fails.
+If the CLI or provider helper fails because of a missing API key, make sure the correct environment variable is set:
 
-### Embeddings not found
+- `GOOGLE_GENERATIVE_AI_API_KEY` for Google
+- `OPENAI_API_KEY` for OpenAI
 
-The route throws an error if the embeddings array is missing, empty, or malformed. Make sure the JSON file exists and contains the expected shape.
+### Missing provider package
 
-### Wrong API route
+If you see an error about a missing provider package, install the expected dependency:
 
-The client component sends messages to whatever value you pass to `apiEndpoint`. Make sure the route exists and the path matches the file you created.
+```bash
+npm install @google/genai
+```
 
-### No RAG results
+or:
 
-If the route runs but returns weak or empty context, check that:
+```bash
+npm install openai
+```
 
-- the embeddings file was generated successfully,
-- the `rag.provider` can embed text,
-- `rag.topK` is set to a sensible value.
+### Embedding dimension mismatch
 
-### Dark mode
+This happens when the index was generated with a provider/model combination that does not match the provider currently used for query embeddings. Make sure the same provider and model are used for both indexing and retrieval.
 
-Use `themeMode="dark"` or `themeMode="light"` if you want to force the widget appearance. The default is `"auto"`.
+### Invalid embeddings file
 
-### CLI errors
+If the embeddings file is missing, empty, or malformed, the route helper will fail during retrieval. Make sure the CLI created a valid JSON file and that the file contains the expected chunk data.
 
-The CLI expects a folder path and a supported provider flag. The current package implementation is wired for `--google` in the server entrypoint, while `--openai` is only parsed by the wrapper.
+## Contributing
 
----
+Contributions are welcome.
 
-## FAQ
+If you want to improve the package, you can:
 
-### Can I use this without RAG?
+- open an issue for bugs or feature ideas
+- submit a pull request with a clear explanation of the change
+- keep examples and documentation aligned with the current implementation
 
-Yes. Use `createChatRoute()` with only `model` and `systemPrompt`.
-
-### Does the component render Markdown?
-
-Yes. Messages are rendered with `react-markdown`.
-
-### What file types does the CLI index?
-
-It currently reads `.md` and `.txt` files.
-
-### Where are embeddings saved by default?
-
-To `./chatbot/embeddings.json` unless you pass `-o` or `--output`.
-
-### Is the component themeable?
-
-Yes. Pass a `theme` object or use the `themeMode` prop.
-
----
+Because the package is intentionally focused on the features implemented in the source, changes should stay consistent with the current API surface.
 
 ## License
 
-This repository is distributed under the MIT License. See [LICENSE](LICENSE) for details.
+This project is licensed under the MIT License.

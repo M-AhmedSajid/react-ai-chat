@@ -3,6 +3,7 @@ import { ReactNode } from "react";
 
 export interface EmbeddingProvider {
   name: string;
+  model: string;
   embed(text: string): Promise<number[]>;
 }
 
@@ -26,6 +27,13 @@ export interface EmbeddedChunk {
   embedding: number[];
 }
 
+export interface EmbeddingIndex {
+  provider: string;
+  model: string;
+  dimensions: number;
+  chunks: EmbeddedChunk[];
+}
+
 export interface CreateIndexOptions {
   provider: EmbeddingProvider;
   documentsPath?: string;
@@ -45,7 +53,7 @@ export interface ChatRouteOptions {
   maxMessages?: number;
   /** Optional RAG configuration for context retrieval */
   rag?: {
-    embeddings: EmbeddedChunk[];
+    index: EmbeddingIndex;
     provider: EmbeddingProvider;
     topK?: number;
   };
@@ -53,7 +61,10 @@ export interface ChatRouteOptions {
 
 // Embedding providers
 export interface GoogleEmbeddingOptions {
-  apiKey?: string;
+  model?: string;
+}
+
+export interface OpenAIEmbeddingOptions {
   model?: string;
 }
 

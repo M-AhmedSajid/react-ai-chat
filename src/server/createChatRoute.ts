@@ -58,23 +58,23 @@ export function createChatRoute({
 
           const topChunks = await retrieveContext({
             question: userText,
-            embeddings: rag.embeddings,
-            embedFn: (text) => rag.provider.embed(text),
+            index: rag.index,
+            provider: rag.provider,
             topK: rag.topK ?? 3,
           });
 
           // console.log(
           //   `\n📚 [next-ai-chatbot] Top Retrieved Chunks (${topChunks.length}):`,
           // );
-          topChunks.forEach((chunk, index) => {
-            // console.log(
-            //   `   [${index + 1}] File/ID: ${chunk.id || chunk.source}`,
-            // );
-            // console.log(`       Score: ${chunk.score?.toFixed(4) ?? "N/A"}`);
-            // console.log(
-            //   `       Preview: "${chunk.text.slice(0, 80).replace(/\n/g, " ")}..."`,
-            // );
-          });
+          // topChunks.forEach((chunk, index) => {
+          // console.log(
+          //   `   [${index + 1}] File/ID: ${chunk.id || chunk.source}`,
+          // );
+          // console.log(`       Score: ${chunk.score?.toFixed(4) ?? "N/A"}`);
+          // console.log(
+          //   `       Preview: "${chunk.text.slice(0, 80).replace(/\n/g, " ")}..."`,
+          // );
+          // });
 
           contextString = formatContext(topChunks);
         } catch (error) {

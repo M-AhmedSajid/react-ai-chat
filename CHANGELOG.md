@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/specification.html).
 
+## 1.1.0
+
+### Added
+
+- Added a provider architecture for embeddings with reusable provider factories.
+- Added OpenAI embedding support through the public provider exports.
+- Added support for provider-specific SDK installation, allowing users to install only the embedding providers they need.
+- Improved CLI provider handling for Google and OpenAI selection.
+
+### Changed
+
+- Updated CLI usage to support running commands without explicitly writing `index`.
+- Added support for selecting providers through `--provider <name>`.
+- Improved CLI provider loading with dynamic SDK imports.
+- Improved the embedding generation workflow for multiple providers.
+
+### Fixed
+
+- Fixed route-level error handling around missing or malformed embedding data during RAG retrieval.
+- Fixed CLI option parsing for input and output paths.
+
 ## 1.0.1
 
 ### Added

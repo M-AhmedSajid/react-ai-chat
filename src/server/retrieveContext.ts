@@ -1,54 +1,74 @@
 import { ChatbotError } from "../error.ts";
-import { EmbeddedChunk, RetrieveContextOptions } from "../types.ts";
+import { EmbeddingIndex, EmbeddingProvider, EmbeddedChunk } from "../types.ts";
 import { cosineSimilarity } from "./cosineSimilarity.ts";
 
 export interface RankedChunk extends EmbeddedChunk {
   score: number;
 }
 
+export interface RetrieveContextOptions {
+  question: string;
+  index: EmbeddingIndex;
+  provider: EmbeddingProvider;
+  topK?: number;
+}
+
 export async function retrieveContext({
   question,
-  embeddings,
-  embedFn,
+  index,
+  provider,
   topK = 3,
 }: RetrieveContextOptions): Promise<RankedChunk[]> {
-  // 1. Missing or invalid embeddings array check
-  if (!embeddings || !Array.isArray(embeddings) || embeddings.length === 0) {
+  const { chunks, provider: indexProvider, model, dimensions } = index;
+
+  // 1. Validate embeddings index
+  if (!chunks || !Array.isArray(chunks) || chunks.length === 0) {
     throw new ChatbotError(
       "Missing or invalid embeddings index. Ensure embeddings.json is loaded and non-empty.",
     );
   }
 
-  // 2. Validate structural integrity of first chunk (detect corrupt JSON structure)
-  const sampleChunk = embeddings[0];
+  // 2. Validate chunk structure
+  const sampleChunk = chunks[0];
+
   if (!sampleChunk || !Array.isArray(sampleChunk.embedding)) {
     throw new ChatbotError(
       "Corrupt embeddings JSON. File does not match expected EmbeddedChunk[] schema.",
     );
   }
 
-  // 3. Generate query vector
+  // 3. Validate provider compatibility
+  if (indexProvider !== provider.name || model !== provider.model) {
+    throw new ChatbotError(
+      `Embedding provider mismatch. Index was created using ${indexProvider}/${model}, but current provider is ${provider.name}/${provider.model}. Please use the same embedding provider and model or regenerate your embeddings.`,
+    );
+  }
+
+  // 4. Generate query embedding
   let queryVector: number[];
+
   try {
-    queryVector = await embedFn(question);
+    queryVector = await provider.embed(question);
   } catch (err: any) {
     throw new ChatbotError(
       `Failed to generate query embedding: ${err.message || err}`,
     );
   }
 
-  // 4. Verify vector dimension compatibility
-  const expectedDim = sampleChunk.embedding.length;
-  if (queryVector.length !== expectedDim) {
+  // 5. Verify dimensions
+  const expectedDimensions = dimensions ?? sampleChunk.embedding.length;
+
+  if (queryVector.length !== expectedDimensions) {
     throw new ChatbotError(
-      `Embedding dimension mismatch. Index was built with ${expectedDim}-dim vectors, but query provider returned ${queryVector.length}-dim vectors.`,
+      `Embedding dimension mismatch. Index was built with ${expectedDimensions}-dimensional vectors, but query provider returned ${queryVector.length}-dimensional vectors.`,
     );
   }
 
-  const ranked: RankedChunk[] = embeddings
-    .map((item) => ({
-      ...item,
-      score: cosineSimilarity(queryVector, item.embedding), // Pure semantic score
+  // 6. Calculate similarity scores
+  const ranked: RankedChunk[] = chunks
+    .map((chunk) => ({
+      ...chunk,
+      score: cosineSimilarity(queryVector, chunk.embedding),
     }))
     .sort((a, b) => b.score - a.score);
 
@@ -56,7 +76,7 @@ export async function retrieveContext({
 }
 
 /**
- * Formats top chunks into a single structured context block with clear source tags.
+ * Formats retrieved chunks into a context block for the LLM.
  */
 export function formatContext(chunks: RankedChunk[]): string {
   if (chunks.length === 0) return "";
