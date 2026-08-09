@@ -4,7 +4,8 @@ import { ReactNode } from "react";
 export interface EmbeddingProvider {
   name: string;
   model: string;
-  embed(text: string): Promise<number[]>;
+
+  embed(text: string, type?: "document" | "query"): Promise<number[]>;
 }
 
 export interface Document {
@@ -65,6 +66,22 @@ export interface GoogleEmbeddingOptions {
 }
 
 export interface OpenAIEmbeddingOptions {
+  model?: string;
+}
+
+export interface VoyageEmbeddingOptions {
+  model?: string;
+}
+
+export interface CohereEmbeddingOptions {
+  model?: string;
+}
+
+export interface JinaEmbeddingOptions {
+  model?: string;
+}
+
+export interface HuggingFaceEmbeddingOptions {
   model?: string;
 }
 

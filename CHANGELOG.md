@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/specification.html).
 
+## 1.2.0
+
+### Added
+
+- Added Voyage AI, Cohere, Jina, and Hugging Face embedding provider exports to the server/public API surface.
+- Added the public Jina client helper `createJinaClient()` and exposed the `JinaClient` and `CreateJinaClientOptions` types.
+- Expanded CLI provider support with `--google`, `--openai`, `--voyage`, `--cohere`, `--jina`, `--huggingface`, and `--provider <name>` selection paths.
+- Added provider-specific runtime wiring for the server-side provider factories expected by the CLI and runtime RAG flow.
+
+### Changed
+
+- Updated the CLI to resolve provider selection through direct flags and provider-name resolution instead of only the older Google/OpenAI-style flow.
+- Kept the output index workflow aligned with the current `createIndex()` implementation that writes the generated content index to `./chatbot/embeddings.json` by default.
+
+### Fixed
+
+- Improved provider response handling so embedding responses without a usable numeric payload now fail with the package's `ChatbotError` boundary instead of returning malformed/undefined vectors.
+- Tightened runtime compatibility checks around the embedding provider and model metadata written to the saved index.
+
 ## 1.1.0
 
 ### Added

@@ -20,7 +20,8 @@ export function googleEmbedding(
   return {
     name: "google",
     model,
-    async embed(text: string) {
+
+    async embed(text: string, _type = "document") {
       try {
         const response = await client.models.embedContent({
           model,

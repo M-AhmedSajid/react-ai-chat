@@ -38,6 +38,10 @@ https://www.youtube.com/watch?v=YZPEbH7LYpE
 - Embedding provider architecture for custom embedding backends
 - Google embeddings via the Google GenAI SDK
 - OpenAI embeddings via the OpenAI SDK
+- Voyage AI embeddings via the Voyage AI SDK
+- Cohere embeddings via the Cohere SDK
+- Jina embeddings with the public Jina client helper plus embedding factory
+- Hugging Face embeddings through the Hugging Face Inference client
 - AI SDK-compatible model support through the `model` argument
 - Custom system prompts
 - Context retrieval and context injection for prompts
@@ -71,31 +75,38 @@ Install the package in your app:
 npm install next-ai-chatbot
 ```
 
-Optional provider SDKs are required for embedding generation:
+The package exports embedding provider factories from its server entry point. Install only the provider SDKs that you actually plan to use:
 
 ```bash
 npm install @google/genai
+npm install openai
+npm install voyageai
+npm install cohere-ai
+npm install @huggingface/inference
 ```
 
-```bash
-npm install openai
-```
+Jina does not need an additional package in the current implementation because the package exposes a native `createJinaClient()` helper that uses the Fetch API and its own API key.
 
 ### Environment variables
 
-The CLI and provider helpers expect the following environment variables when you use the corresponding providers:
+The CLI and provider helpers expect the following environment variables when you use the matching provider:
 
 - `GOOGLE_GENERATIVE_AI_API_KEY` for Google embeddings
 - `OPENAI_API_KEY` for OpenAI embeddings
+- `VOYAGE_API_KEY` for Voyage AI embeddings
+- `COHERE_API_KEY` for Cohere embeddings
+- `JINA_API_KEY` for Jina embeddings
+- `HF_TOKEN` for Hugging Face embeddings
 
 If you are using the CLI locally, set the relevant variable in your shell before running the command:
 
 ```bash
 export GOOGLE_GENERATIVE_AI_API_KEY=your-key
-```
-
-```bash
 export OPENAI_API_KEY=your-key
+export VOYAGE_API_KEY=your-key
+export COHERE_API_KEY=your-key
+export JINA_API_KEY=your-key
+export HF_TOKEN=your-key
 ```
 
 ## Quick start
@@ -275,31 +286,47 @@ You can also use the explicit `index` form:
 npx next-ai-chatbot index ./content --google
 ```
 
-### Supported flags
+### Supported provider selection flags
 
-- `--google` selects the Google embedding provider
-- `--openai` selects the OpenAI embedding provider
+The CLI accepts provider selection with either a direct flag or the generic name form:
+
+- `--google` selects the Google provider
+- `--openai` selects the OpenAI provider
+- `--voyage` selects the Voyage AI provider
+- `--cohere` selects the Cohere provider
+- `--jina` selects the Jina provider
+- `--huggingface` selects the Hugging Face provider
 - `--provider <name>` selects a provider by name
-- `--output <path>` or `-o <path>` sets the output file path
+
+Supported provider names are:
+
+- `google`
+- `openai`
+- `voyage`
+- `cohere`
+- `jina`
+- `huggingface`
 
 ### Examples
 
-#### Google provider
-
 ```bash
 npx next-ai-chatbot ./content --google
-```
-
-#### OpenAI provider
-
-```bash
 npx next-ai-chatbot ./content --openai
+npx next-ai-chatbot ./content --voyage
+npx next-ai-chatbot ./content --cohere
+npx next-ai-chatbot ./content --jina
+npx next-ai-chatbot ./content --huggingface
 ```
 
-#### Explicit provider flag
+The provider name form also works:
 
 ```bash
 npx next-ai-chatbot ./content --provider google
+npx next-ai-chatbot ./content --provider openai
+npx next-ai-chatbot ./content --provider voyage
+npx next-ai-chatbot ./content --provider cohere
+npx next-ai-chatbot ./content --provider jina
+npx next-ai-chatbot ./content --provider huggingface
 ```
 
 ### Output file behavior
@@ -330,12 +357,11 @@ Before running the CLI, make sure the appropriate environment variable is set:
 
 ```bash
 export GOOGLE_GENERATIVE_AI_API_KEY=your-key
-```
-
-or:
-
-```bash
 export OPENAI_API_KEY=your-key
+export VOYAGE_API_KEY=your-key
+export COHERE_API_KEY=your-key
+export JINA_API_KEY=your-key
+export HF_TOKEN=your-key
 ```
 
 ### What the CLI does internally
@@ -346,13 +372,40 @@ The CLI:
 2. Reads frontmatter and extracts document content.
 3. Splits content into chunks.
 4. Generates embeddings with the selected provider.
-5. Writes the resulting index as JSON.
+5. Writes the resulting index as JSON to `embeddings.json`.
+
+The embedding model used to create the index must be the same provider/model that you use at runtime for query embeddings. If you change the embedding model, you must regenerate the index.
+
+### Index generation vs runtime RAG query embedding
+
+There are two distinct steps in the RAG workflow:
+
+- CLI generation: `next-ai-chatbot` loads documents, chunks them, calls the selected provider's `embed()` factory to create a vector index, and writes the JSON file.
+- Runtime query embedding: `createChatRoute()` pulls the latest user message, calls the provider instance configured for `rag.provider`, and generates a query vector for similarity matching against the saved index.
+
+That runtime provider must return vectors with the same dimensions and must be the same provider/model pair described in the stored index metadata. Otherwise `retrieveContext()` fails with a provider/model compatibility check.
 
 ## Providers
 
 The embedding provider layer is intentionally simple. The package exposes factory helpers that wrap a provider-specific client and return the common embedding interface used by the rest of the package.
 
+The server entry point currently exports the following public embedding factories:
+
+```ts
+import {
+  googleEmbedding,
+  openAIEmbedding,
+  voyageEmbedding,
+  cohereEmbedding,
+  jinaEmbedding,
+  createJinaClient,
+  huggingFaceEmbedding,
+} from "next-ai-chatbot/server";
+```
+
 ### Google embedding provider
+
+Default model: `gemini-embedding-001`
 
 #### Installation
 
@@ -376,14 +429,42 @@ const client = new GoogleGenAI({
   apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY!,
 });
 
-const provider = googleEmbedding(client);
+const provider = googleEmbedding(client, {
+  model: "gemini-embedding-001",
+});
 ```
 
-#### When to use it
+#### Runtime RAG usage
 
-Use the Google provider when you want to generate embeddings with the Google GenAI SDK and the corresponding API key is available in your environment.
+```ts
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { createChatRoute, googleEmbedding } from "next-ai-chatbot/server";
+import { GoogleGenAI } from "@google/genai";
+
+const client = new GoogleGenAI({
+  apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY!,
+});
+
+const provider = googleEmbedding(client);
+
+const index = JSON.parse(
+  await readFile(path.join(process.cwd(), "chatbot/embeddings.json"), "utf8"),
+);
+
+export const POST = createChatRoute({
+  model: yourModel,
+  rag: {
+    index,
+    provider,
+    topK: 5,
+  },
+});
+```
 
 ### OpenAI embedding provider
+
+Default model: `text-embedding-3-small`
 
 #### Installation
 
@@ -407,12 +488,237 @@ const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
 });
 
-const provider = openAIEmbedding(client);
+const provider = openAIEmbedding(client, {
+  model: "text-embedding-3-small",
+});
 ```
 
-#### When to use it
+#### Runtime RAG usage
 
-Use the OpenAI provider when you want to generate embeddings through the OpenAI SDK and have an API key configured.
+```ts
+import OpenAI from "openai";
+import { createChatRoute, openAIEmbedding } from "next-ai-chatbot/server";
+
+const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+const provider = openAIEmbedding(client);
+
+const index = JSON.parse(
+  await readFile(path.join(process.cwd(), "chatbot/embeddings.json"), "utf8"),
+);
+
+export const POST = createChatRoute({
+  model: yourModel,
+  rag: {
+    index,
+    provider,
+    topK: 4,
+  },
+});
+```
+
+### Voyage AI embedding provider
+
+Default model: `voyage-4-lite`
+
+#### Installation
+
+```bash
+npm install voyageai
+```
+
+#### Required environment variable
+
+```bash
+export VOYAGE_API_KEY=your-key
+```
+
+#### Initialization example
+
+```ts
+import { VoyageAIClient } from "voyageai";
+import { voyageEmbedding } from "next-ai-chatbot/server";
+
+const client = new VoyageAIClient({
+  apiKey: process.env.VOYAGE_API_KEY!,
+});
+
+const provider = voyageEmbedding(client, {
+  model: "voyage-4-lite",
+});
+```
+
+#### Runtime RAG usage
+
+```ts
+import { VoyageAIClient } from "voyageai";
+import { createChatRoute, voyageEmbedding } from "next-ai-chatbot/server";
+
+const client = new VoyageAIClient({ apiKey: process.env.VOYAGE_API_KEY! });
+const provider = voyageEmbedding(client);
+
+export const POST = createChatRoute({
+  model: yourModel,
+  rag: {
+    index,
+    provider,
+  },
+});
+```
+
+### Cohere embedding provider
+
+Default model: `embed-v4.0`
+
+#### Installation
+
+```bash
+npm install cohere-ai
+```
+
+#### Required environment variable
+
+```bash
+export COHERE_API_KEY=your-key
+```
+
+#### Initialization example
+
+```ts
+import { CohereClientV2 } from "cohere-ai";
+import { cohereEmbedding } from "next-ai-chatbot/server";
+
+const client = new CohereClientV2({
+  token: process.env.COHERE_API_KEY!,
+});
+
+const provider = cohereEmbedding(client, {
+  model: "embed-v4.0",
+});
+```
+
+#### Runtime RAG usage
+
+```ts
+import { CohereClientV2 } from "cohere-ai";
+import { createChatRoute, cohereEmbedding } from "next-ai-chatbot/server";
+
+const client = new CohereClientV2({ token: process.env.COHERE_API_KEY! });
+const provider = cohereEmbedding(client);
+
+export const POST = createChatRoute({
+  model: yourModel,
+  rag: {
+    index,
+    provider,
+  },
+});
+```
+
+### Jina embedding provider
+
+Default model: `jina-embeddings-v3`
+
+#### Installation
+
+The Jina provider currently ships through the package itself. The public helper is `createJinaClient()` from the server entry point and it uses the Fetch API under the hood.
+
+```bash
+npm install next-ai-chatbot
+```
+
+#### Required environment variable
+
+```bash
+export JINA_API_KEY=your-key
+```
+
+#### Initialization example
+
+```ts
+import { createJinaClient, jinaEmbedding } from "next-ai-chatbot/server";
+
+const client = createJinaClient({
+  apiKey: process.env.JINA_API_KEY!,
+});
+
+const provider = jinaEmbedding(client, {
+  model: "jina-embeddings-v3",
+});
+```
+
+`createJinaClient()` accepts:
+
+```ts
+createJinaClient({ apiKey, baseURL?: "https://api.jina.ai/v1" })
+```
+
+It returns a client with an `embeddings.create()` method matching the shape expected by `jinaEmbedding()`.
+
+#### Runtime RAG usage
+
+```ts
+import { createChatRoute, createJinaClient, jinaEmbedding } from "next-ai-chatbot/server";
+
+const client = createJinaClient({ apiKey: process.env.JINA_API_KEY! });
+const provider = jinaEmbedding(client);
+
+export const POST = createChatRoute({
+  model: yourModel,
+  rag: {
+    index,
+    provider,
+  },
+});
+```
+
+### Hugging Face embedding provider
+
+Default model: `sentence-transformers/all-MiniLM-L6-v2`
+
+#### Installation
+
+```bash
+npm install @huggingface/inference
+```
+
+#### Required environment variable
+
+```bash
+export HF_TOKEN=your-key
+```
+
+#### Initialization example
+
+```ts
+import { InferenceClient } from "@huggingface/inference";
+import { huggingFaceEmbedding } from "next-ai-chatbot/server";
+
+const client = new InferenceClient(process.env.HF_TOKEN);
+
+const provider = huggingFaceEmbedding(client, {
+  model: "sentence-transformers/all-MiniLM-L6-v2",
+});
+```
+
+The current Hugging Face integration expects a client exposing `featureExtraction({ model, inputs })` and normalizes either a numeric array or a single-item numeric matrix result.
+
+#### Runtime RAG usage
+
+```ts
+import { InferenceClient } from "@huggingface/inference";
+import { createChatRoute, huggingFaceEmbedding } from "next-ai-chatbot/server";
+
+const client = new InferenceClient(process.env.HF_TOKEN);
+const provider = huggingFaceEmbedding(client);
+
+export const POST = createChatRoute({
+  model: yourModel,
+  rag: {
+    index,
+    provider,
+  },
+});
+```
 
 ## API reference
 

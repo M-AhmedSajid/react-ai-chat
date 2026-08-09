@@ -21,7 +21,7 @@ export function openAIEmbedding(
     name: "openai",
     model,
 
-    async embed(text: string): Promise<number[]> {
+    async embed(text: string, _type = "document"): Promise<number[]> {
       try {
         const response = await client.embeddings.create({
           model,
@@ -38,7 +38,9 @@ export function openAIEmbedding(
 
         return embedding;
       } catch (err: any) {
-        if (err instanceof ChatbotError) throw err;
+        if (err instanceof ChatbotError) {
+          throw err;
+        }
 
         throw new ChatbotError(
           `OpenAI Embedding API Error: ${err.message || err}`,
