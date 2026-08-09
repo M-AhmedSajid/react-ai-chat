@@ -25,7 +25,7 @@
     "LICENSE"
   ],
   "bin": {
-    "next-ai-chatbot": "./bin/next-ai-chatbot.js"
+    "next-ai-chatbot": "bin/next-ai-chatbot.js"
   },
   "scripts": {
     "build": "tsdown",
