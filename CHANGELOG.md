@@ -5,6 +5,59 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/specification.html).
 
+## 2.0.0
+
+### Added
+
+- Added framework agnostic React support for the chatbot client.
+- Added support for React 18 and React 19.
+- Added support for using the chatbot with Vite, Next.js, and React Router.
+- Added a public `style.css` export for framework compatible stylesheet loading.
+- Added framework independent server handling through standard Web `Request` and `Response` APIs.
+- Added the `react-ai-chat` package name and CLI command.
+- Added support for configuring the chatbot through a framework provided HTTP endpoint.
+
+### Changed
+
+- Renamed the package from `next-ai-chatbot` to `react-ai-chat`.
+- Removed the package's direct dependency on Next.js.
+- Removed the automatic `"use client"` directive from the client bundle.
+- Changed CSS handling from JavaScript injection to a public stylesheet export for better SSR compatibility.
+- Updated package exports for ESM and CommonJS client and server builds.
+- Updated the CLI name from `next-ai-chatbot` to `react-ai-chat`.
+- Updated package metadata, documentation, and internal references for the new package identity.
+
+### Fixed
+
+- Fixed CSS loading during server-side rendering in frameworks that do not support importing CSS from Node.
+- Fixed package exports to correctly reference the generated CommonJS `.cjs` files.
+- Improved compatibility with React frameworks that use different server and client runtimes.
+
+### Migration
+
+The package was previously published as `next-ai-chatbot`.
+
+Install the new package:
+
+```bash
+npm install react-ai-chat
+```
+
+Import the chatbot and stylesheet:
+
+```tsx
+import { Chatbot } from "react-ai-chat";
+import "react-ai-chat/style.css";
+```
+
+The server helper remains available through the `/server` export:
+
+```tsx
+import { createChatRoute } from "react-ai-chat/server";
+```
+
+The old `next-ai-chatbot` package remains available on npm as a deprecated package.
+
 ## 1.2.0
 
 ### Added

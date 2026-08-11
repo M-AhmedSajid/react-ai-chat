@@ -48,12 +48,12 @@ export function createChatRoute({
     if (rag && lastUserMessage) {
       const userText = extractMessageText(lastUserMessage);
 
-      // console.log(`\n🔍 [next-ai-chatbot] Extracted User Query: "${userText}"`);
+      // console.log(`\n🔍 [react-ai-chat] Extracted User Query: "${userText}"`);
 
       if (userText.trim()) {
         try {
           // console.log(
-          //   `⚙️ [next-ai-chatbot] Generating query embedding via provider...`,
+          //   `⚙️ [react-ai-chat] Generating query embedding via provider...`,
           // );
 
           const topChunks = await retrieveContext({
@@ -64,7 +64,7 @@ export function createChatRoute({
           });
 
           // console.log(
-          //   `\n📚 [next-ai-chatbot] Top Retrieved Chunks (${topChunks.length}):`,
+          //   `\n📚 [react-ai-chat] Top Retrieved Chunks (${topChunks.length}):`,
           // );
           // topChunks.forEach((chunk, index) => {
           // console.log(
@@ -79,13 +79,13 @@ export function createChatRoute({
           contextString = formatContext(topChunks);
         } catch (error) {
           console.error(
-            "❌ [next-ai-chatbot] Error during RAG retrieval:",
+            "❌ [react-ai-chat] Error during RAG retrieval:",
             error,
           );
         }
       } else {
         // console.log(
-        //   "⚠️ [next-ai-chatbot] Last user message text was empty or space-only.",
+        //   "⚠️ [react-ai-chat] Last user message text was empty or space-only.",
         // );
       }
     }
@@ -94,7 +94,7 @@ export function createChatRoute({
       ? `${systemPrompt}\n\nYou are provided with reference documents.\n\nBase every factual answer on these references.\n\nIf the answer cannot be found in the references, clearly say you don't have enough information instead of guessing.\n\n=== REFERENCES ===\n${contextString}\n==================`
       : systemPrompt;
 
-    // console.log("\n📝 [next-ai-chatbot] System Prompt Sent to Model:");
+    // console.log("\n📝 [react-ai-chat] System Prompt Sent to Model:");
     // console.log("------------------------------------------------");
     // console.log(finalSystemPrompt);
     // console.log("------------------------------------------------\n");

@@ -12,11 +12,8 @@ export default defineConfig([
     deps: {
       neverBundle: ["react", "react-dom", "@ai-sdk/react", "react-markdown"],
     },
-    banner: {
-      js: '"use client";',
-    },
     css: {
-      inject: true,
+      inject: false,
     },
   },
   // Server Entry (createChatRoute, retrieveContext, etc.)

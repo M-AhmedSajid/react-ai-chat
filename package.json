@@ -1,21 +1,22 @@
 {
-  "name": "next-ai-chatbot",
-  "version": "1.2.0",
-  "description": "Plug-and-play AI chatbot for Next.js with RAG support.",
+  "name": "react-ai-chat",
+  "version": "2.0.0",
+  "description": "Plug-and-play AI chatbot for React with RAG support.",
   "type": "module",
   "engines": {
     "node": ">=18"
   },
   "exports": {
     ".": {
-      "types": "./dist/client/index.d.ts",
+      "types": "./dist/client/index.d.mts",
       "import": "./dist/client/index.mjs",
-      "require": "./dist/client/index.js"
+      "require": "./dist/client/index.cjs"
     },
+    "./style.css": "./dist/client/style.css",
     "./server": {
-      "types": "./dist/server/index.d.ts",
+      "types": "./dist/server/index.d.mts",
       "import": "./dist/server/index.mjs",
-      "require": "./dist/server/index.js"
+      "require": "./dist/server/index.cjs"
     }
   },
   "files": [
@@ -25,14 +26,14 @@
     "LICENSE"
   ],
   "bin": {
-    "next-ai-chatbot": "bin/next-ai-chatbot.js"
+    "react-ai-chat": "bin/react-ai-chat.js"
   },
   "scripts": {
     "build": "tsdown",
     "prepack": "npm run build"
   },
   "keywords": [
-    "nextjs",
+    "react",
     "ai",
     "chatbot",
     "rag",
@@ -42,8 +43,12 @@
     "vector-search",
     "google-ai",
     "openai",
-    "react",
-    "next-ai-chatbot"
+    "voyageai",
+    "cohere-ai",
+    "jina-ai",
+    "huggingface",
+    "react-chatbot",
+    "react-ai-chat"
   ],
   "author": "Muhammad Ahmed Sajid <ahmedsajid1506@gmail.com>",
   "license": "MIT",
@@ -59,7 +64,6 @@
     "@google/genai": "^2",
     "@huggingface/inference": "^4",
     "cohere-ai": "^8",
-    "next": "^15 || ^16",
     "openai": "^5",
     "react": "^18 || ^19",
     "react-dom": "^18 || ^19",
@@ -97,10 +101,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/M-AhmedSajid/next-ai-chatbot.git"
+    "url": "git+https://github.com/M-AhmedSajid/react-ai-chat.git"
   },
-  "homepage": "https://github.com/M-AhmedSajid/next-ai-chatbot#readme",
+  "homepage": "https://github.com/M-AhmedSajid/react-ai-chat#readme",
   "bugs": {
-    "url": "https://github.com/M-AhmedSajid/next-ai-chatbot/issues"
+    "url": "https://github.com/M-AhmedSajid/react-ai-chat/issues"
   }
 }

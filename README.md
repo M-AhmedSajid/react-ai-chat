@@ -1,10 +1,17 @@
-# next-ai-chatbot
+# react-ai-chat
 
-A complete AI chatbot toolkit for Next.js with RAG, embeddings, and streaming.
+A complete AI chatbot toolkit for React with RAG, embeddings, and streaming.
 
-next-ai-chatbot gives you the building blocks for adding a polished chatbot experience to a Next.js app without turning your project into a hosted chatbot service. It combines a client-side chatbot UI, a server route helper, a local document indexing CLI, and an embedding provider layer for retrieval-augmented generation (RAG).
+react-ai-chat gives you the building blocks for adding a polished chatbot experience to a React app without turning your project into a hosted chatbot service. It combines a client-side chatbot UI, a server route helper, a local document indexing CLI, and an embedding provider layer for retrieval-augmented generation (RAG).
 
-The package is currently focused on Next.js, but the core pieces are reusable building blocks for modern React-based AI experiences. It is a practical fit for Next.js developers, portfolio owners, SaaS founders, and anyone learning how AI chat experiences are built around real content.
+## Current package status
+
+The current package surface is organized around two public entry points:
+
+- the client tree, which exports a main `Chatbot` widget with compound components such as `Chatbot.Root`, `Chatbot.Trigger`, `Chatbot.Window`, `Chatbot.Header`, `Chatbot.Messages`, and `Chatbot.Input`
+- the server tree, which exports `createChatRoute()` plus the embedding-provider factories for Google, OpenAI, Voyage AI, Cohere, Jina, and Hugging Face
+
+The CLI is also built into the published package and is intended to generate a local embedding index from Markdown and text content. The current build output ships the browser/client bundle, the server entry, and the package-owned CLI command through the same package distribution.
 
 ## Table of contents
 
@@ -17,7 +24,7 @@ The package is currently focused on Next.js, but the core pieces are reusable bu
 - [CLI documentation](#cli-documentation)
 - [Providers](#providers)
 - [API reference](#api-reference)
-- [Why next-ai-chatbot?](#why-next-ai-chatbot)
+- [Why react-ai-chat?](#why-react-ai-chat)
 - [Project ideas](#project-ideas)
 - [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
@@ -32,7 +39,7 @@ https://www.youtube.com/watch?v=YZPEbH7LYpE
 ## Features
 
 - Streaming AI chat responses through the AI SDK
-- Next.js route handler integration with a simple server helper
+- React route handler integration with a simple server helper
 - RAG support for grounding responses in local documents
 - Local document indexing from Markdown and text files
 - Embedding provider architecture for custom embedding backends
@@ -72,7 +79,7 @@ In practice, you point the CLI at a folder of Markdown or text files, generate e
 Install the package in your app:
 
 ```bash
-npm install next-ai-chatbot
+npm install react-ai-chat
 ```
 
 The package exports embedding provider factories from its server entry point. Install only the provider SDKs that you actually plan to use:
@@ -119,7 +126,7 @@ Create a route handler that streams a response with a model instance:
 
 ```ts
 // app/api/chat/route.ts
-import { createChatRoute } from "next-ai-chatbot/server";
+import { createChatRoute } from "react-ai-chat/server";
 
 export const POST = createChatRoute({
   model: yourModel,
@@ -148,21 +155,24 @@ createChatRoute({
 
 ### 3. Add the chatbot UI
 
-The package also exports a client-side chatbot widget:
+The package also exports a client-side chatbot widget. The top-level `Chatbot` export has the compound component members attached directly, so the library can be used either as a monolithic widget or as a composition-friendly API:
 
 ```tsx
-import { Chatbot } from "next-ai-chatbot";
+import { Chatbot } from "react-ai-chat";
+import "react-ai-chat/style.css";
 
 export default function ChatWidget() {
   return (
     <Chatbot
       apiEndpoint="/api/chat"
       title="Ask me anything"
-      subtitle="Built with next-ai-chatbot"
+      subtitle="Built with react-ai-chat"
     />
   );
 }
 ```
+
+The same component family can also be consumed through the named exports such as `Chatbot.Root`, `Chatbot.Trigger`, `Chatbot.Window`, and the other compound members when a custom layout or composition is desired.
 
 This component is designed to work with your route handler through the `apiEndpoint` prop.
 
@@ -174,7 +184,7 @@ After you create an embeddings index, you can inject retrieved context into the 
 // app/api/chat/route.ts
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { createChatRoute, googleEmbedding } from "next-ai-chatbot/server";
+import { createChatRoute, googleEmbedding } from "react-ai-chat/server";
 import { GoogleGenAI } from "@google/genai";
 
 const googleClient = new GoogleGenAI({
@@ -277,13 +287,13 @@ The package ships with a CLI for indexing local documents into an embedding inde
 ### Command syntax
 
 ```bash
-npx next-ai-chatbot [path] [--provider <name>] [--output <path>]
+npx react-ai-chat [path] [--provider <name>] [--output <path>]
 ```
 
 You can also use the explicit `index` form:
 
 ```bash
-npx next-ai-chatbot index ./content --google
+npx react-ai-chat index ./content --google
 ```
 
 ### Supported provider selection flags
@@ -310,23 +320,23 @@ Supported provider names are:
 ### Examples
 
 ```bash
-npx next-ai-chatbot ./content --google
-npx next-ai-chatbot ./content --openai
-npx next-ai-chatbot ./content --voyage
-npx next-ai-chatbot ./content --cohere
-npx next-ai-chatbot ./content --jina
-npx next-ai-chatbot ./content --huggingface
+npx react-ai-chat ./content --google
+npx react-ai-chat ./content --openai
+npx react-ai-chat ./content --voyage
+npx react-ai-chat ./content --cohere
+npx react-ai-chat ./content --jina
+npx react-ai-chat ./content --huggingface
 ```
 
 The provider name form also works:
 
 ```bash
-npx next-ai-chatbot ./content --provider google
-npx next-ai-chatbot ./content --provider openai
-npx next-ai-chatbot ./content --provider voyage
-npx next-ai-chatbot ./content --provider cohere
-npx next-ai-chatbot ./content --provider jina
-npx next-ai-chatbot ./content --provider huggingface
+npx react-ai-chat ./content --provider google
+npx react-ai-chat ./content --provider openai
+npx react-ai-chat ./content --provider voyage
+npx react-ai-chat ./content --provider cohere
+npx react-ai-chat ./content --provider jina
+npx react-ai-chat ./content --provider huggingface
 ```
 
 ### Output file behavior
@@ -340,7 +350,7 @@ The CLI writes an embeddings JSON file to disk. By default, the output path is:
 You can override it with:
 
 ```bash
-npx next-ai-chatbot ./content --google --output ./my-index/embeddings.json
+npx react-ai-chat ./content --google --output ./my-index/embeddings.json
 ```
 
 ### Input path behavior
@@ -380,7 +390,7 @@ The embedding model used to create the index must be the same provider/model tha
 
 There are two distinct steps in the RAG workflow:
 
-- CLI generation: `next-ai-chatbot` loads documents, chunks them, calls the selected provider's `embed()` factory to create a vector index, and writes the JSON file.
+- CLI generation: `react-ai-chat` loads documents, chunks them, calls the selected provider's `embed()` factory to create a vector index, and writes the JSON file.
 - Runtime query embedding: `createChatRoute()` pulls the latest user message, calls the provider instance configured for `rag.provider`, and generates a query vector for similarity matching against the saved index.
 
 That runtime provider must return vectors with the same dimensions and must be the same provider/model pair described in the stored index metadata. Otherwise `retrieveContext()` fails with a provider/model compatibility check.
@@ -400,7 +410,7 @@ import {
   jinaEmbedding,
   createJinaClient,
   huggingFaceEmbedding,
-} from "next-ai-chatbot/server";
+} from "react-ai-chat/server";
 ```
 
 ### Google embedding provider
@@ -423,7 +433,7 @@ export GOOGLE_GENERATIVE_AI_API_KEY=your-key
 
 ```ts
 import { GoogleGenAI } from "@google/genai";
-import { googleEmbedding } from "next-ai-chatbot/server";
+import { googleEmbedding } from "react-ai-chat/server";
 
 const client = new GoogleGenAI({
   apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY!,
@@ -439,7 +449,7 @@ const provider = googleEmbedding(client, {
 ```ts
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { createChatRoute, googleEmbedding } from "next-ai-chatbot/server";
+import { createChatRoute, googleEmbedding } from "react-ai-chat/server";
 import { GoogleGenAI } from "@google/genai";
 
 const client = new GoogleGenAI({
@@ -482,7 +492,7 @@ export OPENAI_API_KEY=your-key
 
 ```ts
 import OpenAI from "openai";
-import { openAIEmbedding } from "next-ai-chatbot/server";
+import { openAIEmbedding } from "react-ai-chat/server";
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
@@ -497,7 +507,7 @@ const provider = openAIEmbedding(client, {
 
 ```ts
 import OpenAI from "openai";
-import { createChatRoute, openAIEmbedding } from "next-ai-chatbot/server";
+import { createChatRoute, openAIEmbedding } from "react-ai-chat/server";
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 const provider = openAIEmbedding(client);
@@ -536,7 +546,7 @@ export VOYAGE_API_KEY=your-key
 
 ```ts
 import { VoyageAIClient } from "voyageai";
-import { voyageEmbedding } from "next-ai-chatbot/server";
+import { voyageEmbedding } from "react-ai-chat/server";
 
 const client = new VoyageAIClient({
   apiKey: process.env.VOYAGE_API_KEY!,
@@ -551,7 +561,7 @@ const provider = voyageEmbedding(client, {
 
 ```ts
 import { VoyageAIClient } from "voyageai";
-import { createChatRoute, voyageEmbedding } from "next-ai-chatbot/server";
+import { createChatRoute, voyageEmbedding } from "react-ai-chat/server";
 
 const client = new VoyageAIClient({ apiKey: process.env.VOYAGE_API_KEY! });
 const provider = voyageEmbedding(client);
@@ -585,7 +595,7 @@ export COHERE_API_KEY=your-key
 
 ```ts
 import { CohereClientV2 } from "cohere-ai";
-import { cohereEmbedding } from "next-ai-chatbot/server";
+import { cohereEmbedding } from "react-ai-chat/server";
 
 const client = new CohereClientV2({
   token: process.env.COHERE_API_KEY!,
@@ -600,7 +610,7 @@ const provider = cohereEmbedding(client, {
 
 ```ts
 import { CohereClientV2 } from "cohere-ai";
-import { createChatRoute, cohereEmbedding } from "next-ai-chatbot/server";
+import { createChatRoute, cohereEmbedding } from "react-ai-chat/server";
 
 const client = new CohereClientV2({ token: process.env.COHERE_API_KEY! });
 const provider = cohereEmbedding(client);
@@ -623,7 +633,7 @@ Default model: `jina-embeddings-v3`
 The Jina provider currently ships through the package itself. The public helper is `createJinaClient()` from the server entry point and it uses the Fetch API under the hood.
 
 ```bash
-npm install next-ai-chatbot
+npm install react-ai-chat
 ```
 
 #### Required environment variable
@@ -635,7 +645,7 @@ export JINA_API_KEY=your-key
 #### Initialization example
 
 ```ts
-import { createJinaClient, jinaEmbedding } from "next-ai-chatbot/server";
+import { createJinaClient, jinaEmbedding } from "react-ai-chat/server";
 
 const client = createJinaClient({
   apiKey: process.env.JINA_API_KEY!,
@@ -657,7 +667,11 @@ It returns a client with an `embeddings.create()` method matching the shape expe
 #### Runtime RAG usage
 
 ```ts
-import { createChatRoute, createJinaClient, jinaEmbedding } from "next-ai-chatbot/server";
+import {
+  createChatRoute,
+  createJinaClient,
+  jinaEmbedding,
+} from "react-ai-chat/server";
 
 const client = createJinaClient({ apiKey: process.env.JINA_API_KEY! });
 const provider = jinaEmbedding(client);
@@ -691,7 +705,7 @@ export HF_TOKEN=your-key
 
 ```ts
 import { InferenceClient } from "@huggingface/inference";
-import { huggingFaceEmbedding } from "next-ai-chatbot/server";
+import { huggingFaceEmbedding } from "react-ai-chat/server";
 
 const client = new InferenceClient(process.env.HF_TOKEN);
 
@@ -706,7 +720,7 @@ The current Hugging Face integration expects a client exposing `featureExtractio
 
 ```ts
 import { InferenceClient } from "@huggingface/inference";
-import { createChatRoute, huggingFaceEmbedding } from "next-ai-chatbot/server";
+import { createChatRoute, huggingFaceEmbedding } from "react-ai-chat/server";
 
 const client = new InferenceClient(process.env.HF_TOKEN);
 const provider = huggingFaceEmbedding(client);
@@ -755,7 +769,7 @@ The `rag` object supports:
 #### Example usage
 
 ```ts
-import { createChatRoute } from "next-ai-chatbot/server";
+import { createChatRoute } from "react-ai-chat/server";
 
 export const POST = createChatRoute({
   model: yourModel,
@@ -795,7 +809,7 @@ Returns an object that implements the package's embedding provider interface wit
 
 ```ts
 import { GoogleGenAI } from "@google/genai";
-import { googleEmbedding } from "next-ai-chatbot/server";
+import { googleEmbedding } from "react-ai-chat/server";
 
 const client = new GoogleGenAI({
   apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY!,
@@ -837,7 +851,7 @@ Returns an object that implements the package's embedding provider interface wit
 
 ```ts
 import OpenAI from "openai";
-import { openAIEmbedding } from "next-ai-chatbot/server";
+import { openAIEmbedding } from "react-ai-chat/server";
 
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
@@ -848,11 +862,11 @@ const provider = openAIEmbedding(client, {
 });
 ```
 
-## Why next-ai-chatbot?
+## Why react-ai-chat?
 
 Building a RAG chatbot from scratch usually means stitching together document loading, chunking, embeddings, retrieval, prompt formatting, and streaming yourself. This package gives you a focused starting point for those pieces without locking you into a hosted service.
 
-Compared with manually wiring everything up, next-ai-chatbot helps you move faster. Compared with hosted chatbot tools, it keeps the retrieval and indexing workflow inside your own project and lets you work with your own content.
+Compared with manually wiring everything up, react-ai-chat helps you move faster. Compared with hosted chatbot tools, it keeps the retrieval and indexing workflow inside your own project and lets you work with your own content.
 
 It is also helpful if you want to understand the moving parts of a chatbot stack before you move to a larger production system.
 

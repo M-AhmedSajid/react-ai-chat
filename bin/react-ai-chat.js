@@ -5,8 +5,8 @@ await import("dotenv/config");
 const args = process.argv.slice(2);
 
 // Allow both:
-// npx next-ai-chatbot index ...
-// npx next-ai-chatbot ...
+// npx react-ai-chat index ...
+// npx react-ai-chat ...
 const cliArgs = args[0] === "index" ? args.slice(1) : args;
 
 function getFlagValue(...flags) {
@@ -65,19 +65,19 @@ Error: Please specify an embedding provider.
 
 Examples:
 
-npx next-ai-chatbot --google
-npx next-ai-chatbot --openai
-npx next-ai-chatbot --voyage
-npx next-ai-chatbot --cohere
-npx next-ai-chatbot --jina
-npx next-ai-chatbot --huggingface
+npx react-ai-chat --google
+npx react-ai-chat --openai
+npx react-ai-chat --voyage
+npx react-ai-chat --cohere
+npx react-ai-chat --jina
+npx react-ai-chat --huggingface
 
-npx next-ai-chatbot --provider google
-npx next-ai-chatbot --provider openai
-npx next-ai-chatbot --provider voyage
-npx next-ai-chatbot --provider cohere
-npx next-ai-chatbot --provider jina
-npx next-ai-chatbot --provider huggingface
+npx react-ai-chat --provider google
+npx react-ai-chat --provider openai
+npx react-ai-chat --provider voyage
+npx react-ai-chat --provider cohere
+npx react-ai-chat --provider jina
+npx react-ai-chat --provider huggingface
 `);
 
   process.exit(1);
