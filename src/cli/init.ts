@@ -84,7 +84,7 @@ export function ChatbotHeader() {
   const { setIsOpen } = useChatbotContext();
 
   return (
-    <header className="chatbot-header">
+    <div className="chatbot-header">
       <div className="chatbot-header-content">
         <h2>AI Assistant</h2>
         <p>Ask me anything</p>
@@ -98,7 +98,7 @@ export function ChatbotHeader() {
       >
         ×
       </button>
-    </header>
+    </div>
   );
 }
 `,

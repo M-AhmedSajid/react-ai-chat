@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/specification.html).
 
+## 2.1.1
+
+### Fixed
+
+- Fixed Chatbot window sizing and padding in mobile
+- Fixed Chatbot header to div.
+
 ## 2.1.0
 
 ### Added
@@ -27,21 +34,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/specificati
 - Improved the chatbot component architecture for deeper customization.
 - Improved the CLI to support both chatbot generation and embedding generation.
 - Improved generated chatbot styling for desktop and mobile layouts.
-- Improved generated chatbot theme handling with light, dark, and system preference support.
-- Improved generated JSX output so it contains no TypeScript-specific syntax.
 
 ### Fixed
 
-- Fixed chatbot header title and subtitle layout.
-- Fixed spacing between messages.
 - Fixed user and assistant Markdown styling.
 - Fixed code block styling inside Markdown messages.
-- Fixed send button sizing and layout.
-- Fixed custom input submission with Enter and the send button.
-- Fixed loading state visibility when `ChatbotLoading` is not explicitly rendered.
-- Fixed chatbot closing when the window is initially open.
 - Fixed mobile chatbot sizing and positioning.
-- Fixed JSX generation leaving TypeScript syntax in generated files.
 
 ## 2.0.0
 
@@ -57,9 +55,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/specificati
 
 ### Changed
 
-- Renamed the package from `next-ai-chatbot` to `react-ai-chat`.
-- Removed the package's direct dependency on Next.js.
-- Removed the automatic `"use client"` directive from the client bundle.
 - Changed CSS handling from JavaScript injection to a public stylesheet export for better SSR compatibility.
 - Updated package exports for ESM and CommonJS client and server builds.
 - Updated the CLI name from `next-ai-chatbot` to `react-ai-chat`.
