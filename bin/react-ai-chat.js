@@ -4,6 +4,15 @@ await import("dotenv/config");
 
 const args = process.argv.slice(2);
 
+if (
+  args.length === 0 ||
+  args.includes("--help") ||
+  args.includes("-h")
+) {
+  showHelp();
+  process.exit(0);
+}
+
 // Allow both:
 // npx react-ai-chat index ...
 // npx react-ai-chat ...
@@ -49,6 +58,27 @@ const outputPath =
 
 // Provider
 let providerName = getFlagValue("--provider");
+
+if (args[0] === "init") {
+  const jsx = args.includes("--jsx");
+  const force = args.includes("--force");
+
+  const pathIndex = args.indexOf("--path");
+  const outputPath =
+    pathIndex !== -1 && args[pathIndex + 1]
+      ? args[pathIndex + 1]
+      : "src/components/chatbot";
+
+  const { initChatbot } = await import("../dist/cli/index.mjs");
+
+  initChatbot({
+    jsx,
+    path: outputPath,
+    force,
+  });
+
+  process.exit(0);
+}
 
 if (!providerName) {
   if (cliArgs.includes("--google")) providerName = "google";
@@ -310,3 +340,41 @@ await createIndex({
   documentsPath,
   outputPath,
 });
+
+function showHelp() {
+  console.log(`
+react-ai-chat
+
+Usage:
+  react-ai-chat init [options]
+  react-ai-chat --<provider>
+  react-ai-chat --provider <provider>
+
+Commands:
+  init                 Generate customizable chatbot components
+
+Init options:
+  --jsx                Generate JSX instead of TSX
+  --path <directory>   Output directory
+  --force              Replace an existing generated chatbot
+
+General options:
+  --help, -h           Show this help message
+
+Embedding providers:
+  --google
+  --openai
+  --voyage
+  --cohere
+  --jina
+  --huggingface
+
+Provider alternative:
+  --provider google
+  --provider openai
+  --provider voyage
+  --provider cohere
+  --provider jina
+  --provider huggingface
+`);
+}

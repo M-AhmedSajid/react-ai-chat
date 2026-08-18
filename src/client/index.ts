@@ -1,4 +1,5 @@
 import { Chatbot as MonolithicChatbot } from "./Chatbot.tsx";
+
 import {
   ChatbotRoot,
   ChatbotTrigger,
@@ -8,7 +9,6 @@ import {
   ChatbotInput,
 } from "./ChatbotComponents.tsx";
 
-// 1. Attach compound components directly to the main Chatbot export
 export const Chatbot = Object.assign(MonolithicChatbot, {
   Root: ChatbotRoot,
   Trigger: ChatbotTrigger,
@@ -18,7 +18,6 @@ export const Chatbot = Object.assign(MonolithicChatbot, {
   Input: ChatbotInput,
 });
 
-// 2. Named exports for standalone usage
 export {
   ChatbotRoot,
   ChatbotTrigger,
@@ -28,15 +27,14 @@ export {
   ChatbotInput,
 };
 
-// 3. Export context hook for developers building custom subcomponents
-export { useChatbotContext } from "./ChatbotContext.tsx";
+export { useChatbotContext, ChatbotProvider } from "./ChatbotContext.tsx";
 
-// 4. Export type definitions
 export type {
   ChatbotProps,
   ChatbotTheme,
   ChatbotThemeTokens,
 } from "../types.ts";
+
 export type {
   ChatbotRootProps,
   ChatbotTriggerProps,

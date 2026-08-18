@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/specification.html).
 
+## 2.1.0
+
+### Added
+
+- Added a CLI `init` command for generating customizable chatbot components.
+- Added TSX generation by default.
+- Added JSX generation with `--jsx`.
+- Added custom output directories with `--path`.
+- Added `--force` to replace an existing generated chatbot.
+- Added CLI help with `--help` and `-h`.
+- Added automatic help output when the CLI is run without arguments.
+- Added generated chatbot components with separate, editable source files.
+- Added generated CSS with customizable chatbot styling.
+- Added customizable chatbot header, messages, loading state, input, trigger, starter prompts, and Markdown styling.
+- Added support for customizing generated chatbot components without relying on the package's internal component structure.
+- Preserved the existing embedding generation commands and provider options.
+
+### Changed
+
+- Improved the chatbot component architecture for deeper customization.
+- Improved the CLI to support both chatbot generation and embedding generation.
+- Improved generated chatbot styling for desktop and mobile layouts.
+- Improved generated chatbot theme handling with light, dark, and system preference support.
+- Improved generated JSX output so it contains no TypeScript-specific syntax.
+
+### Fixed
+
+- Fixed chatbot header title and subtitle layout.
+- Fixed spacing between messages.
+- Fixed user and assistant Markdown styling.
+- Fixed code block styling inside Markdown messages.
+- Fixed send button sizing and layout.
+- Fixed custom input submission with Enter and the send button.
+- Fixed loading state visibility when `ChatbotLoading` is not explicitly rendered.
+- Fixed chatbot closing when the window is initially open.
+- Fixed mobile chatbot sizing and positioning.
+- Fixed JSX generation leaving TypeScript syntax in generated files.
+
 ## 2.0.0
 
 ### Added

@@ -23,3 +23,5 @@ export async function createIndex({
 
   console.log("Indexing complete!");
 }
+
+export { initChatbot } from "./init.ts";

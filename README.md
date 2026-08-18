@@ -6,12 +6,13 @@ react-ai-chat gives you the building blocks for adding a polished chatbot experi
 
 ## Current package status
 
-The current package surface is organized around two public entry points:
+The current package surface is organized around three public entry points:
 
-- the client tree, which exports a main `Chatbot` widget with compound components such as `Chatbot.Root`, `Chatbot.Trigger`, `Chatbot.Window`, `Chatbot.Header`, `Chatbot.Messages`, and `Chatbot.Input`
-- the server tree, which exports `createChatRoute()` plus the embedding-provider factories for Google, OpenAI, Voyage AI, Cohere, Jina, and Hugging Face
+- the **client tree**, which exports a main `Chatbot` widget with compound components (`Chatbot.Root`, `Chatbot.Trigger`, `Chatbot.Window`, `Chatbot.Header`, `Chatbot.Messages`, `Chatbot.Input`) plus 20 granular sub-components for advanced customization. Also exports `useChatbotContext()` for accessing the internal chat state.
+- the **server tree**, which exports `createChatRoute()` for creating streaming chat endpoints, plus embedding-provider factories for Google, OpenAI, Voyage AI, Cohere, Jina, and Hugging Face. Also exports `createIndex()` for programmatic embedding generation.
+- the **CLI**, which supports two independent workflows: generating a local embedding index from Markdown and text content, and scaffolding customizable chatbot component files.
 
-The CLI is also built into the published package and is intended to generate a local embedding index from Markdown and text content. The current build output ships the browser/client bundle, the server entry, and the package-owned CLI command through the same package distribution.
+The current build output ships the browser/client bundle, the server entry, and the package-owned CLI command through the same package distribution.
 
 ## Table of contents
 
@@ -155,7 +156,11 @@ createChatRoute({
 
 ### 3. Add the chatbot UI
 
-The package also exports a client-side chatbot widget. The top-level `Chatbot` export has the compound component members attached directly, so the library can be used either as a monolithic widget or as a composition-friendly API:
+The package exports a client-side chatbot widget with multiple usage patterns:
+
+#### Monolithic usage (simplest)
+
+The top-level `Chatbot` export includes all functionality in a single component:
 
 ```tsx
 import { Chatbot } from "react-ai-chat";
@@ -172,9 +177,103 @@ export default function ChatWidget() {
 }
 ```
 
-The same component family can also be consumed through the named exports such as `Chatbot.Root`, `Chatbot.Trigger`, `Chatbot.Window`, and the other compound members when a custom layout or composition is desired.
+#### Compound component pattern (recommended for custom layouts)
 
-This component is designed to work with your route handler through the `apiEndpoint` prop.
+Break the chatbot into smaller components for more control:
+
+```tsx
+import { Chatbot } from "react-ai-chat";
+import "react-ai-chat/style.css";
+
+export default function ChatWidget() {
+  return (
+    <Chatbot.Root apiEndpoint="/api/chat">
+      <Chatbot.Trigger>Open chat</Chatbot.Trigger>
+      <Chatbot.Window>
+        <Chatbot.Header title="Support" />
+        <Chatbot.Messages />
+        <Chatbot.Input />
+      </Chatbot.Window>
+    </Chatbot.Root>
+  );
+}
+```
+
+#### Granular component pattern (advanced customization)
+
+The package exports 20+ granular components for deep customization of every part:
+
+```tsx
+import {
+  ChatbotRoot,
+  ChatbotTrigger,
+  ChatbotWindow,
+  ChatbotHeader,
+  ChatbotTitle,
+  ChatbotClose,
+  ChatbotMessages,
+  ChatbotMessageList,
+  ChatbotMessage,
+  ChatbotMessageAvatar,
+  ChatbotMessageContent,
+  ChatbotEmpty,
+  ChatbotStarterPrompts,
+  ChatbotInput,
+  ChatbotField,
+  ChatbotSend,
+  useChatbotContext,
+} from "react-ai-chat";
+import "react-ai-chat/style.css";
+
+export default function CustomChat() {
+  const { messages, input, setInput, handleSubmit } = useChatbotContext();
+
+  return (
+    <ChatbotRoot apiEndpoint="/api/chat">
+      <ChatbotTrigger>💬</ChatbotTrigger>
+      <ChatbotWindow>
+        <ChatbotHeader>
+          <ChatbotTitle>My Chat</ChatbotTitle>
+          <ChatbotClose />
+        </ChatbotHeader>
+        <ChatbotMessages>
+          {messages.length === 0 ? (
+            <ChatbotEmpty>
+              <ChatbotStarterPrompts />
+            </ChatbotEmpty>
+          ) : (
+            <ChatbotMessageList>
+              {messages.map((msg) => (
+                <ChatbotMessage key={msg.id} role={msg.role}>
+                  <ChatbotMessageAvatar />
+                  <ChatbotMessageContent>{msg.content}</ChatbotMessageContent>
+                </ChatbotMessage>
+              ))}
+            </ChatbotMessageList>
+          )}
+        </ChatbotMessages>
+        <ChatbotInput>
+          <ChatbotField
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+          />
+          <ChatbotSend onClick={handleSubmit} />
+        </ChatbotInput>
+      </ChatbotWindow>
+    </ChatbotRoot>
+  );
+}
+```
+
+#### Using generated components
+
+For complete control, use the `npx react-ai-chat init` command to generate your own component files that you can customize without relying on the package's internal structure:
+
+```bash
+npx react-ai-chat init
+```
+
+This creates standalone, editable component files in your project that you can modify as needed.
 
 ### 4. Complete RAG example
 
@@ -282,9 +381,13 @@ That is the core RAG experience: search relevant content, inject the relevant te
 
 ## CLI documentation
 
-The package ships with a CLI for indexing local documents into an embedding index.
+The package ships with a CLI that supports two independent workflows:
 
-### Command syntax
+### 1. Embedding index generation
+
+Generates a local embedding index from Markdown and text content.
+
+#### Command syntax
 
 ```bash
 npx react-ai-chat [path] [--provider <name>] [--output <path>]
@@ -296,7 +399,42 @@ You can also use the explicit `index` form:
 npx react-ai-chat index ./content --google
 ```
 
-### Supported provider selection flags
+### 2. Chatbot component scaffolding
+
+Generates customizable chatbot component files with styling, themes, and component composition (new in v2.1.0).
+
+#### Command syntax
+
+```bash
+npx react-ai-chat init [--path <dir>] [--jsx] [--force]
+```
+
+#### Chatbot generation examples
+
+```bash
+# Generate TSX components in the default location
+npx react-ai-chat init
+
+# Generate JSX components (JavaScript without TypeScript)
+npx react-ai-chat init --jsx
+
+# Specify a custom output directory
+npx react-ai-chat init --path ./my-chatbot-components
+
+# Overwrite existing generated files
+npx react-ai-chat init --force
+
+# Get help
+npx react-ai-chat --help
+```
+
+The `init` command generates:
+- Separate, editable component files for each part of the chatbot (header, messages, input, trigger, etc.)
+- CSS with light/dark theme support and responsive mobile layout
+- TypeScript types and React hooks for component composition
+- A ready-to-use chatbot that can be customized without relying on the package's internal components
+
+### Embedding generation: Supported provider selection flags
 
 The CLI accepts provider selection with either a direct flag or the generic name form:
 
@@ -317,7 +455,7 @@ Supported provider names are:
 - `jina`
 - `huggingface`
 
-### Examples
+### Embedding generation: Examples
 
 ```bash
 npx react-ai-chat ./content --google
@@ -374,7 +512,7 @@ export JINA_API_KEY=your-key
 export HF_TOKEN=your-key
 ```
 
-### What the CLI does internally
+### Embedding generation: What the CLI does internally
 
 The CLI:
 
@@ -385,6 +523,28 @@ The CLI:
 5. Writes the resulting index as JSON to `embeddings.json`.
 
 The embedding model used to create the index must be the same provider/model that you use at runtime for query embeddings. If you change the embedding model, you must regenerate the index.
+
+### Component scaffolding: What the CLI generates
+
+The `init` command creates the following files in your project:
+
+```
+chatbot/
+  Chatbot.tsx (or .jsx)
+  ChatbotHeader.tsx
+  ChatbotMessages.tsx
+  ChatbotInput.tsx
+  Chatbot.module.css
+  themes.ts
+```
+
+Each generated component is standalone and can be customized independently. The styling includes:
+
+- Responsive mobile and desktop layouts
+- Light and dark theme support
+- System preference detection
+- Markdown rendering for message content
+- Loading states and animations
 
 ### Index generation vs runtime RAG query embedding
 
@@ -399,7 +559,7 @@ That runtime provider must return vectors with the same dimensions and must be t
 
 The embedding provider layer is intentionally simple. The package exposes factory helpers that wrap a provider-specific client and return the common embedding interface used by the rest of the package.
 
-The server entry point currently exports the following public embedding factories:
+The server entry point exports the following public embedding factories:
 
 ```ts
 import {
@@ -410,6 +570,15 @@ import {
   jinaEmbedding,
   createJinaClient,
   huggingFaceEmbedding,
+} from "react-ai-chat/server";
+```
+
+The server entry point also exports utilities for embedding generation and retrieval:
+
+```ts
+import {
+  createIndex,  // Programmatic embedding index generation
+  retrieveContext,  // Query embedding and semantic retrieval
 } from "react-ai-chat/server";
 ```
 
@@ -735,7 +904,46 @@ export const POST = createChatRoute({
 ```
 
 ## API reference
+### createIndex()
 
+#### Signature
+
+```ts
+createIndex({
+  provider,
+  documentsPath?,
+  outputPath?,
+})
+```
+
+#### Parameters
+
+- `provider` (required): an embedding provider instance (e.g., `googleEmbedding(client)`)
+- `documentsPath` (optional): path to the directory containing Markdown or text files. Default: `./content`
+- `outputPath` (optional): path where the embedding index JSON is written. Default: `./chatbot/embeddings.json`
+
+#### Return value
+
+Returns a Promise that resolves when the index has been generated and saved.
+
+#### Example usage
+
+```ts
+import { GoogleGenAI } from "@google/genai";
+import { createIndex, googleEmbedding } from "react-ai-chat/server";
+
+const client = new GoogleGenAI({
+  apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY!,
+});
+
+const provider = googleEmbedding(client);
+
+await createIndex({
+  provider,
+  documentsPath: "./docs",
+  outputPath: "./public/embeddings.json",
+});
+```
 ### createChatRoute()
 
 #### Signature
@@ -860,6 +1068,222 @@ const client = new OpenAI({
 const provider = openAIEmbedding(client, {
   model: "text-embedding-3-small",
 });
+```
+
+### voyageEmbedding()
+
+#### Signature
+
+```ts
+voyageEmbedding(client, options?)
+```
+
+#### Parameters
+
+- `client` (required): a Voyage AI client instance with an `embed()` method.
+- `options` (optional): an object with a `model` property.
+
+#### Return value
+
+Returns an object that implements the package's embedding provider interface with:
+
+- `name`
+- `model`
+- `embed(text)`
+
+#### Example usage
+
+```ts
+import { VoyageAIClient } from "voyageai";
+import { voyageEmbedding } from "react-ai-chat/server";
+
+const client = new VoyageAIClient({
+  apiKey: process.env.VOYAGE_API_KEY!,
+});
+
+const provider = voyageEmbedding(client);
+```
+
+### cohereEmbedding()
+
+#### Signature
+
+```ts
+cohereEmbedding(client, options?)
+```
+
+#### Parameters
+
+- `client` (required): a Cohere client instance with an `embeddings()` or `embed()` method.
+- `options` (optional): an object with a `model` property.
+
+#### Return value
+
+Returns an object that implements the package's embedding provider interface with:
+
+- `name`
+- `model`
+- `embed(text)`
+
+#### Example usage
+
+```ts
+import { CohereClientV2 } from "cohere-ai";
+import { cohereEmbedding } from "react-ai-chat/server";
+
+const client = new CohereClientV2({
+  token: process.env.COHERE_API_KEY!,
+});
+
+const provider = cohereEmbedding(client);
+```
+
+### jinaEmbedding()
+
+#### Signature
+
+```ts
+jinaEmbedding(client, options?)
+```
+
+#### Parameters
+
+- `client` (required): a Jina client instance created with `createJinaClient()`.
+- `options` (optional): an object with a `model` property.
+
+#### Return value
+
+Returns an object that implements the package's embedding provider interface with:
+
+- `name`
+- `model`
+- `embed(text)`
+
+#### Example usage
+
+```ts
+import { createJinaClient, jinaEmbedding } from "react-ai-chat/server";
+
+const client = createJinaClient({
+  apiKey: process.env.JINA_API_KEY!,
+});
+
+const provider = jinaEmbedding(client);
+```
+
+### createJinaClient()
+
+#### Signature
+
+```ts
+createJinaClient({ apiKey, baseURL? })
+```
+
+#### Parameters
+
+- `apiKey` (required): your Jina API key.
+- `baseURL` (optional): custom base URL for the Jina API. Default: `https://api.jina.ai/v1`
+
+#### Return value
+
+Returns a Jina client object with an `embeddings.create()` method compatible with `jinaEmbedding()`.
+
+#### Example usage
+
+```ts
+import { createJinaClient } from "react-ai-chat/server";
+
+const client = createJinaClient({
+  apiKey: process.env.JINA_API_KEY!,
+});
+```
+
+### huggingFaceEmbedding()
+
+#### Signature
+
+```ts
+huggingFaceEmbedding(client, options?)
+```
+
+#### Parameters
+
+- `client` (required): an InferenceClient instance with a `featureExtraction({ model, inputs })` method.
+- `options` (optional): an object with a `model` property.
+
+If `options.model` is not supplied, the implementation uses the default model:
+
+```text
+sentence-transformers/all-MiniLM-L6-v2
+```
+
+#### Return value
+
+Returns an object that implements the package's embedding provider interface with:
+
+- `name`
+- `model`
+- `embed(text)`
+
+#### Example usage
+
+```ts
+import { InferenceClient } from "@huggingface/inference";
+import { huggingFaceEmbedding } from "react-ai-chat/server";
+
+const client = new InferenceClient(process.env.HF_TOKEN);
+
+const provider = huggingFaceEmbedding(client, {
+  model: "sentence-transformers/all-MiniLM-L6-v2",
+});
+```
+
+### useChatbotContext()
+
+#### Signature
+
+```ts
+const {
+  messages,
+  input,
+  setInput,
+  isLoading,
+  handleSubmit,
+  error,
+} = useChatbotContext();
+```
+
+#### Return value
+
+Returns an object with the following properties:
+
+- `messages`: array of chat messages with `id`, `role` (`"user"` or `"assistant"`), and `content`
+- `input`: current input field value
+- `setInput`: function to update the input field
+- `isLoading`: boolean indicating if a response is being streamed
+- `handleSubmit`: function to submit the current message
+- `error`: error object if a request failed, or null
+
+#### Example usage
+
+```tsx
+import { useChatbotContext } from "react-ai-chat";
+
+export function CustomChatInput() {
+  const { input, setInput, handleSubmit, isLoading } = useChatbotContext();
+
+  return (
+    <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+      <input
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        disabled={isLoading}
+        placeholder="Type your message..."
+      />
+      <button disabled={isLoading}>Send</button>
+    </form>
+  );
+}
 ```
 
 ## Why react-ai-chat?

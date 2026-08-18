@@ -5,6 +5,7 @@ import {
   useEffect,
   ReactNode,
   CSSProperties,
+  SubmitEvent,
 } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
@@ -19,7 +20,7 @@ interface ChatbotContextValue {
   status: ReturnType<typeof useChat>["status"];
   isLoading: boolean;
   handleSubmit: (
-    e?: { preventDefault: () => void },
+    e?: SubmitEvent<HTMLFormElement>,
     customText?: string,
   ) => Promise<void>;
   position: "bottom-right" | "bottom-left" | "top-right" | "top-left";
