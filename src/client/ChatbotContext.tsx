@@ -11,7 +11,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { ChatbotTheme, ChatbotThemeTokens } from "../types.ts";
 
-interface ChatbotContextValue {
+export interface ChatbotContextValue {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
   input: string;

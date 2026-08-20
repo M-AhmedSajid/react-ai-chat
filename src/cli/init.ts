@@ -43,20 +43,28 @@ export function Chatbot({
       initialOpen={initialOpen}
       themeMode={themeMode}
     >
-      <ChatbotUI position={position} />
+      <ChatbotUI />
     </ChatbotProvider>
   );
 }
 
-function ChatbotUI({ position }: { position: ChatbotProps["position"] }) {
-  const { isOpen, setIsOpen, themeStyles } = useChatbotContext();
+function ChatbotUI() {
+  const {
+    isOpen,
+    setIsOpen,
+    position,
+    themeMode,
+    themeStyles,
+  } = useChatbotContext();
+
+  const positionClass = \`chatbot-\${position}\`;
 
   return (
     <>
       {!isOpen && (
         <button
           type="button"
-          className={\`chatbot-trigger chatbot-trigger-\${position}\`}
+          className={\`chatbot-trigger \${positionClass}\`}
           onClick={() => setIsOpen(true)}
           aria-label="Open chatbot"
         >
@@ -65,7 +73,11 @@ function ChatbotUI({ position }: { position: ChatbotProps["position"] }) {
       )}
 
       {isOpen && (
-        <div className={\`chatbot chatbot-\${position}\`} style={themeStyles}>
+        <div
+          className={\`chatbot \${positionClass}\`}
+          style={themeStyles}
+          data-theme={themeMode !== "auto" ? themeMode : undefined}
+        >
           <ChatbotHeader />
           <ChatbotMessages />
           <ChatbotInput />
@@ -73,7 +85,8 @@ function ChatbotUI({ position }: { position: ChatbotProps["position"] }) {
       )}
     </>
   );
-}`,
+}
+`,
   },
 
   {
@@ -84,7 +97,7 @@ export function ChatbotHeader() {
   const { setIsOpen } = useChatbotContext();
 
   return (
-    <div className="chatbot-header">
+    <header className="chatbot-header">
       <div className="chatbot-header-content">
         <h2>AI Assistant</h2>
         <p>Ask me anything</p>
@@ -93,12 +106,26 @@ export function ChatbotHeader() {
       <button
         type="button"
         onClick={() => setIsOpen(false)}
-        aria-label="Close chatbot"
         className="chatbot-close"
+        aria-label="Close chatbot"
       >
-        ×
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
       </button>
-    </div>
+    </header>
   );
 }
 `,
@@ -109,15 +136,47 @@ export function ChatbotHeader() {
     content: `import { useChatbotContext } from "react-ai-chat";
 import ReactMarkdown from "react-markdown";
 
+const starterPrompts = [
+  "What is the main tech stack?",
+  "Tell me about key projects.",
+  "How can I get started?",
+];
+
 export function ChatbotMessages() {
-  const { messages, isLoading } = useChatbotContext();
+  const {
+    messages,
+    isLoading,
+    handleSubmit,
+  } = useChatbotContext();
 
   return (
     <div className="chatbot-messages">
       {messages.length === 0 && (
         <div className="chatbot-empty">
-          <h3>How can I help?</h3>
-          <p>Ask me anything to get started.</p>
+          <div className="chatbot-empty-content">
+            <h3>How can I help?</h3>
+            <p>
+              Ask me anything to get started.
+            </p>
+          </div>
+
+          <div className="chatbot-starter-prompts">
+            <p className="chatbot-starter-prompts-label">
+              Try asking:
+            </p>
+
+            {starterPrompts.map((prompt) => (
+              <button
+                key={prompt}
+                type="button"
+                className="chatbot-prompt"
+                onClick={() => handleSubmit(undefined, prompt)}
+              >
+                <span>{prompt}</span>
+                <span aria-hidden="true">→</span>
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
@@ -130,10 +189,19 @@ export function ChatbotMessages() {
             {message.parts.map((part, index) => {
               if (part.type !== "text") return null;
 
-              return message.role === "user" ? (
-                <span key={index}>{part.text}</span>
-              ) : (
-                <div className="chatbot-markdown" key={index}>
+              if (message.role === "user") {
+                return (
+                  <span key={index}>
+                    {part.text}
+                  </span>
+                );
+              }
+
+              return (
+                <div
+                  key={index}
+                  className="chatbot-markdown"
+                >
                   <ReactMarkdown>
                     {part.text}
                   </ReactMarkdown>
@@ -144,11 +212,21 @@ export function ChatbotMessages() {
         ))}
 
         {isLoading && (
-          <div className="chatbot-loading">
-            Thinking
-            <span className="chatbot-loading-dot" />
-            <span className="chatbot-loading-dot" />
-            <span className="chatbot-loading-dot" />
+          <div className="chatbot-loading" aria-live="polite">
+            <span>Thinking</span>
+
+            <span
+              className="chatbot-loading-dot"
+              aria-hidden="true"
+            />
+            <span
+              className="chatbot-loading-dot"
+              aria-hidden="true"
+            />
+            <span
+              className="chatbot-loading-dot"
+              aria-hidden="true"
+            />
           </div>
         )}
       </div>
@@ -181,14 +259,30 @@ export function ChatbotInput() {
         placeholder="Ask a question..."
         disabled={isLoading}
         className="chatbot-input-field"
+        aria-label="Chat message"
       />
 
       <button
         type="submit"
         disabled={isLoading || !input.trim()}
         className="chatbot-send"
+        aria-label="Send message"
       >
-        Send
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <line x1="22" y1="2" x2="11" y2="13" />
+          <polygon points="22 2 15 22 11 13 2 9 22 2" />
+        </svg>
       </button>
     </form>
   );
@@ -374,26 +468,65 @@ export function ChatbotInput() {
 }
 
 /* Empty State */
-.chatbot-empty {
+.chatbot-empty-content {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  margin-top: auto;
-  margin-bottom: auto;
-  text-align: center;
 }
 
-.chatbot-empty h3 {
+.chatbot-empty-content h3 {
   font-size: 0.875rem;
   font-weight: 600;
   margin: 0;
 }
 
-.chatbot-empty p {
+.chatbot-empty-content p {
   color: var(--cb-muted-fg);
   font-size: 0.75rem;
   line-height: 1.6;
   margin: 0;
+}
+
+.chatbot-starter-prompts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.chatbot-starter-prompts-label {
+  color: var(--cb-muted-fg);
+  font-size: 0.75rem;
+  margin: 0;
+}
+
+.chatbot-prompt {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--cb-border);
+  border-radius: 0.5rem;
+  background-color: var(--cb-bg);
+  color: var(--cb-fg);
+  font-size: 0.75rem;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.chatbot-prompt:hover {
+  background-color: var(--cb-muted-bg);
+  border-color: var(--cb-primary);
+}
+
+.chatbot-prompt span:last-child {
+  flex-shrink: 0;
+  font-size: 1rem;
 }
 
 /* Message Bubbles */

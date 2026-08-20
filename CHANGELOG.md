@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/specification.html).
 
+## 2.2.0
+
+### Changed
+
+- `Chatbot` is now self-contained and no longer depends on the internal compound component implementation.
+- Compound chatbot components are no longer exported from the package.
+- The CLI generated chatbot UI is now independent of the package's internal UI components.
+- Generated chatbot UI can be customized directly in the user's project while chatbot logic remains provided by the package.
+
+### Removed
+
+- Removed the internal `ChatbotComponents.tsx` implementation.
+- Removed compound chatbot components from the public package API.
+
 ## 2.1.1
 
 ### Fixed
