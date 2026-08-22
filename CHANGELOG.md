@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/specification.html).
 
+## 2.3.0
+
+### Added
+
+- Added support for `.mdx` files in the RAG document loader.
+- Added MDX processing that removes JSX components such as `<Card>`, `<Cards>`, and `<Steps>` while preserving their content.
+- Added support for nested MDX components during document processing.
+- Removed MDX imports, exports, and expressions from indexed content.
+
+### Changed
+
+- Improved the default chatbot system prompt for more natural conversational responses.
+- Updated RAG context instructions so retrieved content is treated as relevant context instead of requiring responses to be based strictly on the indexed documents.
+
 ## 2.2.0
 
 ### Changed

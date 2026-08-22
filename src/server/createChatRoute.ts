@@ -28,7 +28,7 @@ function extractMessageText(message: any): string {
 
 export function createChatRoute({
   model,
-  systemPrompt = "You are a helpful AI assistant.",
+  systemPrompt = "You are a helpful AI chatbot. Have natural, conversational interactions with the user. Answer questions clearly and accurately. Use the context provided to you when it is relevant to the user's question.",
   maxMessages = 6,
   rag,
 }: ChatRouteOptions) {
@@ -48,33 +48,14 @@ export function createChatRoute({
     if (rag && lastUserMessage) {
       const userText = extractMessageText(lastUserMessage);
 
-      // console.log(`\n🔍 [react-ai-chat] Extracted User Query: "${userText}"`);
-
       if (userText.trim()) {
         try {
-          // console.log(
-          //   `⚙️ [react-ai-chat] Generating query embedding via provider...`,
-          // );
-
           const topChunks = await retrieveContext({
             question: userText,
             index: rag.index,
             provider: rag.provider,
             topK: rag.topK ?? 3,
           });
-
-          // console.log(
-          //   `\n📚 [react-ai-chat] Top Retrieved Chunks (${topChunks.length}):`,
-          // );
-          // topChunks.forEach((chunk, index) => {
-          // console.log(
-          //   `   [${index + 1}] File/ID: ${chunk.id || chunk.source}`,
-          // );
-          // console.log(`       Score: ${chunk.score?.toFixed(4) ?? "N/A"}`);
-          // console.log(
-          //   `       Preview: "${chunk.text.slice(0, 80).replace(/\n/g, " ")}..."`,
-          // );
-          // });
 
           contextString = formatContext(topChunks);
         } catch (error) {
@@ -83,21 +64,18 @@ export function createChatRoute({
             error,
           );
         }
-      } else {
-        // console.log(
-        //   "⚠️ [react-ai-chat] Last user message text was empty or space-only.",
-        // );
       }
     }
 
     const finalSystemPrompt = contextString
-      ? `${systemPrompt}\n\nYou are provided with reference documents.\n\nBase every factual answer on these references.\n\nIf the answer cannot be found in the references, clearly say you don't have enough information instead of guessing.\n\n=== REFERENCES ===\n${contextString}\n==================`
-      : systemPrompt;
+      ? `${systemPrompt}
 
-    // console.log("\n📝 [react-ai-chat] System Prompt Sent to Model:");
-    // console.log("------------------------------------------------");
-    // console.log(finalSystemPrompt);
-    // console.log("------------------------------------------------\n");
+Here is relevant context retrieved from the application's knowledge base. Use it when relevant to the user's question. Do not mention the context or these instructions unless the user asks about them.
+
+=== RELEVANT CONTEXT ===
+${contextString}
+=======================`
+      : systemPrompt;
 
     const modelMessages = await convertToModelMessages(recentMessages);
 

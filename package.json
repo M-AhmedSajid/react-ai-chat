@@ -58,7 +58,12 @@
     "dotenv": "^17.4.2",
     "glob": "^13.0.6",
     "gray-matter": "^4.0.3",
-    "react-markdown": "^10.1.0"
+    "react-markdown": "^10.1.0",
+    "remark-mdx": "^3.1.1",
+    "remark-parse": "^11.0.0",
+    "remark-stringify": "^11.0.0",
+    "unified": "^11.0.5",
+    "unist-util-visit": "^5.1.0"
   },
   "peerDependencies": {
     "@google/genai": "^2",
