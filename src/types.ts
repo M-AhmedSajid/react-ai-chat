@@ -26,17 +26,20 @@ export interface EmbeddedChunk {
   chunk: number;
   text: string;
   embedding: number[];
+  embeddingModel?: string;
 }
 
 export interface EmbeddingIndex {
   provider: string;
   model: string;
+  fallbackModel?: string;
   dimensions: number;
   chunks: EmbeddedChunk[];
 }
 
 export interface CreateIndexOptions {
   provider: EmbeddingProvider;
+  fallbackProvider?: EmbeddingProvider;
   documentsPath?: string;
   outputPath?: string;
 }
@@ -63,26 +66,32 @@ export interface ChatRouteOptions {
 // Embedding providers
 export interface GoogleEmbeddingOptions {
   model?: string;
+  dimensions?: number;
 }
 
 export interface OpenAIEmbeddingOptions {
   model?: string;
+  dimensions?: number;
 }
 
 export interface VoyageEmbeddingOptions {
   model?: string;
+  dimensions?: number;
 }
 
 export interface CohereEmbeddingOptions {
   model?: string;
+  dimensions?: number;
 }
 
 export interface JinaEmbeddingOptions {
   model?: string;
+  dimensions?: number;
 }
 
 export interface HuggingFaceEmbeddingOptions {
   model?: string;
+  dimensions?: number;
 }
 
 // Client

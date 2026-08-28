@@ -1,6 +1,7 @@
-import { EmbeddingProvider, JinaEmbeddingOptions } from "../../types.ts";
+import type { EmbeddingProvider, JinaEmbeddingOptions } from "../../types.ts";
 import { ChatbotError } from "../../error.ts";
 import { JinaClient } from "./client.ts";
+import { throwProviderError } from "../utils.ts";
 
 export function jinaEmbedding(
   client: JinaClient,
@@ -18,6 +19,7 @@ export function jinaEmbedding(
           model,
           input: [text],
           task: type === "query" ? "retrieval.query" : "retrieval.passage",
+          dimensions: options.dimensions,
         });
 
         const embedding = response.data?.[0]?.embedding;
@@ -28,11 +30,7 @@ export function jinaEmbedding(
 
         return embedding;
       } catch (error) {
-        if (error instanceof ChatbotError) {
-          throw error;
-        }
-
-        throw new ChatbotError(`Jina embedding error: ${error}`);
+        throwProviderError("Jina", error);
       }
     },
   };

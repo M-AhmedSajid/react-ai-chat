@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/specification.html).
 
+## 2.4.0
+
+### Added
+
+- Added an interactive `embed` CLI command for creating RAG embedding indexes.
+- Added interactive provider and embedding model selection.
+- Added embedding dimension selection for supported providers.
+- Added fallback embedding model support for rate-limit failures.
+- Added automatic validation to ensure primary and fallback embedding models use compatible dimensions.
+- Added embedding model metadata to generated indexes.
+- Added provider-specific error codes through `ChatbotError`.
+
+### Changed
+
+- Replaced the previous provider flags such as `--google` and `--openai` with the interactive `embed` command.
+- Updated the embedding index workflow to record the primary model, fallback model, and embedding dimensions.
+- Updated embedding providers to use a shared provider error handling mechanism.
+- Updated OpenAI dependency support to version `7`.
+- Added `@inquirer/prompts` for interactive CLI configuration.
+
+### Fixed
+
+- Fixed embedding provider errors so rate-limit failures can trigger the configured fallback model.
+- Fixed embedding indexes being created with vectors of inconsistent dimensions.
+- Improved Hugging Face embedding requests by explicitly using the `hf-inference` provider.
+- Improved provider error handling during RAG query embedding.
+
 ## 2.3.0
 
 ### Added

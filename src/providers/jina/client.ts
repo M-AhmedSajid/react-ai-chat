@@ -6,6 +6,7 @@ export interface JinaClient {
       model: string;
       input: string[];
       task?: "retrieval.query" | "retrieval.passage";
+      dimensions?: number;
     }): Promise<{
       data?: {
         embedding?: number[];

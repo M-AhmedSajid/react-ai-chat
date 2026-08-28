@@ -1,8 +1,16 @@
-import { EmbeddingProvider, HuggingFaceEmbeddingOptions } from "../../types.ts";
+import type {
+  EmbeddingProvider,
+  HuggingFaceEmbeddingOptions,
+} from "../../types.ts";
 import { ChatbotError } from "../../error.ts";
+import { throwProviderError } from "../utils.ts";
 
 interface HuggingFaceClient {
-  featureExtraction(args: { model: string; inputs: string }): Promise<unknown>;
+  featureExtraction(args: {
+    model: string;
+    inputs: string;
+    provider?: "hf-inference";
+  }): Promise<unknown>;
 }
 
 export function huggingFaceEmbedding(
@@ -20,6 +28,7 @@ export function huggingFaceEmbedding(
         const response = await client.featureExtraction({
           model,
           inputs: text,
+          provider: "hf-inference",
         });
 
         const embedding = normalizeEmbedding(response);
@@ -32,11 +41,7 @@ export function huggingFaceEmbedding(
 
         return embedding;
       } catch (error) {
-        if (error instanceof ChatbotError) {
-          throw error;
-        }
-
-        throw new ChatbotError(`Hugging Face embedding error: ${error}`);
+        throwProviderError("Hugging Face", error);
       }
     },
   };

@@ -11,6 +11,9 @@ The package handles the chatbot logic. The CLI can generate the UI directly into
 - Built on the Vercel AI SDK
 - Optional RAG with embeddings
 - Multiple embedding providers
+- Interactive RAG embedding CLI
+- Configurable embedding dimensions
+- Fallback embedding models
 - Custom API endpoint
 - Light, dark, and system themes
 - Custom theme tokens
@@ -239,6 +242,27 @@ npx react-ai-chat init --path ./components/chatbot
 npx react-ai-chat init --force
 ```
 
+### Create a RAG embedding index
+
+```bash
+npx react-ai-chat embed
+```
+
+The interactive command lets you configure the embedding provider, model, dimensions, fallback model, documents path, and output path.
+
+### Show CLI help
+
+```bash
+npx react-ai-chat --help
+```
+
+Available commands:
+
+```text
+init
+embed
+```
+
 After generation, import the component from your project:
 
 ```tsx
@@ -326,20 +350,53 @@ If the answer cannot be found in the retrieved references, the generated system 
 
 ## Creating an embedding index
 
-The package includes CLI utilities for loading documents, chunking them, generating embeddings, and saving an index.
+The package includes an interactive CLI for loading documents, chunking them, generating embeddings, and saving a RAG index.
+
+Run:
+
+```bash
+npx react-ai-chat embed
+```
+
+The CLI will guide you through:
+
+1. Selecting an embedding provider
+2. Selecting an embedding model
+3. Selecting the embedding dimensions when supported
+4. Selecting an optional fallback model
+5. Choosing the documents directory
+6. Choosing the output path
 
 The default paths are:
 
 ```text
-./content
-./chatbot/embeddings.json
+Documents: ./content
+Output: ./chatbot/embeddings.json
 ```
 
-```bash
-npx react-ai-chat --google
+The generated index stores the embedding provider, model, fallback model, dimensions, and individual embeddings.
+
+### Embedding dimensions
+
+Some embedding providers support multiple output dimensions. The CLI lets you select a supported dimension when the provider and model allow it.
+
+The selected dimension is used when generating the embeddings and is stored in the generated index.
+
+### Fallback models
+
+You can configure a fallback embedding model during indexing.
+
+The fallback model must produce embeddings with the same dimensions as the primary model. If the primary provider returns a rate-limit error, embedding generation switches to the configured fallback model.
+
+For example:
+
+```text
+Primary model: gemini-embedding-001
+Fallback model: gemini-embedding-2
+Dimensions: 3072
 ```
 
----
+The fallback model is used only when the primary model reaches its rate limit.
 
 # Embedding Providers
 
@@ -347,21 +404,44 @@ The package currently supports:
 
 - Google
 - OpenAI
-- Voyage
+- Voyage AI
 - Cohere
-- Jina
+- Jina AI
 - Hugging Face
 
-Provider implementations are exported from:
+Embedding providers are available from the server entry point:
 
 ```ts
-import {} from // provider exports
-"react-ai-chat/server";
+import {
+  googleEmbedding,
+  openAIEmbedding,
+  voyageEmbedding,
+  cohereEmbedding,
+  jinaEmbedding,
+  huggingFaceEmbedding,
+} from "react-ai-chat/server";
 ```
 
-The exact model is configurable through each provider's options.
+Each provider accepts a model and, where supported, an embedding dimension.
 
----
+For example:
+
+```ts
+const provider = googleEmbedding(client, {
+  model: "gemini-embedding-001",
+  dimensions: 3072,
+});
+```
+
+The embedding model and dimensions used to create the RAG index must match the provider configuration used during retrieval.
+
+For CLI-based indexing, run:
+
+```bash
+npx react-ai-chat embed
+```
+
+The CLI handles provider, model, dimension, and fallback model selection interactively.
 
 # Server API
 

@@ -1,9 +1,18 @@
-// src/errors.ts
+export type ChatbotErrorCode =
+  | "RATE_LIMIT"
+  | "AUTHENTICATION"
+  | "INVALID_REQUEST"
+  | "PROVIDER"
+  | "UNKNOWN";
+
 export class ChatbotError extends Error {
-  constructor(message: string) {
+  code: ChatbotErrorCode;
+
+  constructor(message: string, code: ChatbotErrorCode = "UNKNOWN") {
     super(message);
     this.name = "ChatbotError";
-    // Custom formatting for readable console output without full stack dumps
+    this.code = code;
+
     Object.setPrototypeOf(this, ChatbotError.prototype);
   }
 }

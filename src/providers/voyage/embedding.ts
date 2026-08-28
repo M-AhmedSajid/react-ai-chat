@@ -1,11 +1,13 @@
-import { EmbeddingProvider, VoyageEmbeddingOptions } from "../../types.ts";
+import type { EmbeddingProvider, VoyageEmbeddingOptions } from "../../types.ts";
 import { ChatbotError } from "../../error.ts";
+import { throwProviderError } from "../utils.ts";
 
 interface VoyageClient {
   embed(args: {
     input: string[];
     model: string;
     input_type?: "query" | "document";
+    output_dimension?: number;
   }): Promise<{
     data?: {
       embedding?: number[];
@@ -29,6 +31,7 @@ export function voyageEmbedding(
           input: [text],
           model,
           input_type: type,
+          output_dimension: options.dimensions,
         });
 
         const embedding = response.data?.[0]?.embedding;
@@ -39,11 +42,7 @@ export function voyageEmbedding(
 
         return embedding;
       } catch (error) {
-        if (error instanceof ChatbotError) {
-          throw error;
-        }
-
-        throw new ChatbotError(`Voyage embedding error: ${error}`);
+        throwProviderError("Voyage", error);
       }
     },
   };

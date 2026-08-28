@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { loadDocuments } from "./loader.ts";
 import { chunkDocuments } from "./chunker.ts";
 import { generateEmbeddings, saveIndex } from "./generate.ts";
@@ -5,6 +6,7 @@ import { CreateIndexOptions } from "../types.ts";
 
 export async function createIndex({
   provider,
+  fallbackProvider,
   documentsPath = "./content",
   outputPath = "./chatbot/embeddings.json",
 }: CreateIndexOptions) {
@@ -15,8 +17,18 @@ export async function createIndex({
   const chunks = chunkDocuments(documents);
   console.log(`Created ${chunks.length} total chunk(s).\n`);
 
-  console.log(`Generating embeddings using provider: ${provider.name}...`);
-  const embeddings = await generateEmbeddings(chunks, provider);
+  console.log(
+    `Generating embeddings using ${provider.name} (${provider.model})...`,
+  );
+
+  if (fallbackProvider) {
+    console.log(`Fallback model: ${fallbackProvider.model}`);
+  }
+  const embeddings = await generateEmbeddings(
+    chunks,
+    provider,
+    fallbackProvider,
+  );
 
   console.log("\nSaving index file...");
   await saveIndex(outputPath, embeddings);
@@ -25,3 +37,4 @@ export async function createIndex({
 }
 
 export { initChatbot } from "./init.ts";
+export { runEmbedCommand } from "./embed.ts";

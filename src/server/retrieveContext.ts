@@ -49,9 +49,14 @@ export async function retrieveContext({
 
   try {
     queryVector = await provider.embed(question);
-  } catch (err: any) {
+  } catch (error) {
+    if (error instanceof ChatbotError) {
+      throw error;
+    }
+
     throw new ChatbotError(
-      `Failed to generate query embedding: ${err.message || err}`,
+      `Failed to generate query embedding: ${error}`,
+      "PROVIDER",
     );
   }
 

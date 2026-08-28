@@ -1,11 +1,13 @@
-import { EmbeddingProvider, CohereEmbeddingOptions } from "../../types.ts";
+import type { EmbeddingProvider, CohereEmbeddingOptions } from "../../types.ts";
 import { ChatbotError } from "../../error.ts";
+import { throwProviderError } from "../utils.ts";
 
 interface CohereClient {
   embed(args: {
     model: string;
     inputType: "search_document" | "search_query";
     texts: string[];
+    outputDimension?: number;
   }): Promise<{
     embeddings?: {
       float?: number[][];
@@ -29,6 +31,7 @@ export function cohereEmbedding(
           model,
           inputType: type === "query" ? "search_query" : "search_document",
           texts: [text],
+          outputDimension: options.dimensions,
         });
 
         const embedding = response.embeddings?.float?.[0];
@@ -39,11 +42,7 @@ export function cohereEmbedding(
 
         return embedding;
       } catch (error) {
-        if (error instanceof ChatbotError) {
-          throw error;
-        }
-
-        throw new ChatbotError(`Cohere embedding error: ${error}`);
+        throwProviderError("Cohere", error);
       }
     },
   };
