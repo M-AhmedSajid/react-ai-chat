@@ -19,7 +19,7 @@ export function voyageEmbedding(
   client: VoyageClient,
   options: VoyageEmbeddingOptions = {},
 ): EmbeddingProvider {
-  const model = options.model ?? "voyage-4-lite";
+  const model = options.model ?? "voyage-4";
 
   return {
     name: "voyage",

@@ -22,7 +22,7 @@ export function googleEmbedding(
   client: GoogleClient,
   options: GoogleEmbeddingOptions = {},
 ): EmbeddingProvider {
-  const model = options.model ?? "gemini-embedding-001";
+  const model = options.model ?? "gemini-embedding-2";
 
   return {
     name: "google",

@@ -17,7 +17,7 @@ export function huggingFaceEmbedding(
   client: HuggingFaceClient,
   options: HuggingFaceEmbeddingOptions = {},
 ): EmbeddingProvider {
-  const model = options.model ?? "sentence-transformers/all-MiniLM-L6-v2";
+  const model = options.model ?? "Qwen/Qwen3-Embedding-0.6B";
 
   return {
     name: "huggingface",

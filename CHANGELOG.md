@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/specification.html).
 
+## 2.4.1
+
+### Changed
+
+- Updated default embedding models across supported providers.
+- Improved default model selection for better out-of-the-box RAG quality.
+- Updated Hugging Face's default embedding model to match the curated provider list.
+
 ## 2.4.0
 
 ### Added

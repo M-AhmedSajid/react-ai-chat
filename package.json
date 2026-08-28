@@ -1,6 +1,6 @@
 {
   "name": "react-ai-chat",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "description": "Plug-and-play AI chatbot for React with RAG support.",
   "type": "module",
   "engines": {
