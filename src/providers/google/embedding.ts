@@ -26,7 +26,7 @@ interface GoogleClient {
   };
 }
 
-const MAX_BATCH_SIZE = 250;
+const MAX_BATCH_SIZE = 100;
 
 export function googleEmbedding(
   client: GoogleClient,

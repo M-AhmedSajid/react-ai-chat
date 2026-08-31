@@ -242,7 +242,7 @@ The supported providers are:
 | OpenAI       |              2,048 |
 | Voyage AI    |              1,000 |
 | Jina AI      |              2,048 |
-| Google       |                250 |
+| Google       |                100 |
 | Cohere       |                 96 |
 | Hugging Face |                 32 |
 

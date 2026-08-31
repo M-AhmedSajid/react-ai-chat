@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/specificati
 
 # Changelog
 
+## 2.5.1
+
+### Fixed
+
+- Lowered Google provider's `MAX_BATCH_SIZE` constant to 100.
+
 ## 2.5.0
 
 ### Changed
