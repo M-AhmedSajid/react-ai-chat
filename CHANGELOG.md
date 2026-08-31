@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/specification.html).
 
+# Changelog
+
+## 2.5.0
+
+### Changed
+
+- Added batched embedding generation for RAG indexing.
+- Embedding chunks are now sent using each provider's configured `maxBatchSize`.
+- Embedding batches are processed sequentially to reduce unnecessary API requests and rate-limit pressure.
+- Added `embedMany()` support across embedding providers.
+- Added provider-specific batch size handling for Google, OpenAI, Voyage AI, Cohere, Jina AI, and Hugging Face.
+- Added embedding batch progress logs during index generation.
+- Added fallback provider support across embedding batches when the primary provider reaches its rate limit.
+
+### Fixed
+
+- Fixed embedding generation sending every chunk as an individual provider request.
+
 ## 2.4.1
 
 ### Changed

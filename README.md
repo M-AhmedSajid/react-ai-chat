@@ -25,6 +25,9 @@ _See react-ai-chat powering an AI chatbot in a real portfolio._
 - Server-side `createChatRoute()`
 - Optional RAG with local embedding indexes
 - Multiple embedding providers
+- Batched embedding generation
+- Provider-specific embedding batch limits
+- Sequential batch processing to reduce unnecessary rate-limit pressure
 - Light, dark, and automatic theme modes
 - Custom theme tokens
 - Custom icons and CSS classes
@@ -161,7 +164,7 @@ Use `light`, `dark`, or `auto` for `themeMode`.
 
 For the complete customization and theming API, see the [documentation](https://react-ai-chat-docs.vercel.app/).
 
-## Generate a own chatbot
+## Generate your own chatbot
 
 Need complete control over the UI?
 
@@ -210,11 +213,40 @@ npx react-ai-chat embed
 
 The CLI creates an embedding index from your configured documents.
 
-You can also inspect the available options:
+Embedding requests are processed in batches according to the selected provider's supported batch size. Batches are processed sequentially, so the CLI does not send every chunk to the provider at the same time.
+
+You can inspect the available options with:
 
 ```bash
 npx react-ai-chat embed --help
 ```
+
+### Embedding batches
+
+Each embedding provider defines a maximum batch size. The index generator uses that limit when sending chunks to the provider.
+
+For example, a provider may process:
+
+```text
+Embedding batch 1/3: chunks 1-32/70
+Embedding batch 2/3: chunks 33-64/70
+Embedding batch 3/3: chunks 65-70/70
+```
+
+Each batch is sent as a single `embedMany()` request.
+
+The supported providers are:
+
+| Provider     | Maximum batch size |
+| ------------ | -----------------: |
+| OpenAI       |              2,048 |
+| Voyage AI    |              1,000 |
+| Jina AI      |              2,048 |
+| Google       |                250 |
+| Cohere       |                 96 |
+| Hugging Face |                 32 |
+
+Provider and model limits can vary. You can also configure a smaller embedding batch size when needed.
 
 ### Configure RAG
 

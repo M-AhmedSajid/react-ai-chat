@@ -15,35 +15,58 @@ interface CohereClient {
   }>;
 }
 
+const MAX_BATCH_SIZE = 96;
+
 export function cohereEmbedding(
   client: CohereClient,
   options: CohereEmbeddingOptions = {},
 ): EmbeddingProvider {
   const model = options.model ?? "embed-v4.0";
 
+  async function embedMany(
+    texts: string[],
+    type: "document" | "query" = "document",
+  ): Promise<number[][]> {
+    if (texts.length === 0) return [];
+
+    try {
+      const response = await client.embed({
+        model,
+        inputType: type === "query" ? "search_query" : "search_document",
+        texts,
+        ...(options.dimensions !== undefined
+          ? { outputDimension: options.dimensions }
+          : {}),
+      });
+
+      const embeddings = response.embeddings?.float;
+
+      if (
+        !embeddings ||
+        embeddings.length !== texts.length ||
+        embeddings.some((embedding) => !embedding)
+      ) {
+        throw new ChatbotError(
+          `Cohere returned ${embeddings?.length ?? 0} embeddings for ${texts.length} texts.`,
+        );
+      }
+
+      return embeddings;
+    } catch (error) {
+      throwProviderError("Cohere", error);
+    }
+  }
+
   return {
     name: "cohere",
     model,
+    maxBatchSize: MAX_BATCH_SIZE,
 
     async embed(text: string, type = "document") {
-      try {
-        const response = await client.embed({
-          model,
-          inputType: type === "query" ? "search_query" : "search_document",
-          texts: [text],
-          outputDimension: options.dimensions,
-        });
-
-        const embedding = response.embeddings?.float?.[0];
-
-        if (!embedding) {
-          throw new ChatbotError("Cohere failed to return embedding values.");
-        }
-
-        return embedding;
-      } catch (error) {
-        throwProviderError("Cohere", error);
-      }
+      const embeddings = await embedMany([text], type);
+      return embeddings[0];
     },
+
+    embedMany,
   };
 }

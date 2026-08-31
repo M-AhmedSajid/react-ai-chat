@@ -4,8 +4,11 @@ import { ReactNode } from "react";
 export interface EmbeddingProvider {
   name: string;
   model: string;
+  maxBatchSize: number;
 
   embed(text: string, type?: "document" | "query"): Promise<number[]>;
+
+  embedMany?(texts: string[], type?: "document" | "query"): Promise<number[][]>;
 }
 
 export interface Document {
@@ -42,6 +45,7 @@ export interface CreateIndexOptions {
   fallbackProvider?: EmbeddingProvider;
   documentsPath?: string;
   outputPath?: string;
+  embeddingBatchSize?: number;
 }
 
 export interface RetrieveContextOptions {
