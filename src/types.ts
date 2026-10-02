@@ -6,9 +6,21 @@ export interface EmbeddingProvider {
   model: string;
   maxBatchSize: number;
 
+  // Hard limit for the number of input tokens in one API request.
+  // Only set this when documented by the provider/model.
+  maxBatchTokens?: number;
+
+  // Optional exact token counter for this provider/model.
+  countTokens?: (text: string) => number;
+
   embed(text: string, type?: "document" | "query"): Promise<number[]>;
 
   embedMany?(texts: string[], type?: "document" | "query"): Promise<number[][]>;
+}
+
+export interface EmbeddingRateLimit {
+  requestsPerMinute?: number;
+  tokensPerMinute?: number;
 }
 
 export interface Document {
@@ -35,17 +47,16 @@ export interface EmbeddedChunk {
 export interface EmbeddingIndex {
   provider: string;
   model: string;
-  fallbackModel?: string;
   dimensions: number;
   chunks: EmbeddedChunk[];
 }
 
 export interface CreateIndexOptions {
   provider: EmbeddingProvider;
-  fallbackProvider?: EmbeddingProvider;
   documentsPath?: string;
   outputPath?: string;
   embeddingBatchSize?: number;
+  embeddingRateLimit?: EmbeddingRateLimit;
 }
 
 export interface RetrieveContextOptions {
@@ -112,7 +123,7 @@ export interface ChatbotThemeTokens {
   mutedBackground?: string;
   /** Secondary text color for subtitles and labels */
   mutedForeground?: string;
-  /** Border color for inputs and prompt chips */
+  /** Border color for inputs, prompt chips */
   borderColor?: string;
 }
 

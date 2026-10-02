@@ -6,7 +6,6 @@ export interface EmbeddingConfig {
   provider: EmbeddingProviderName;
   model: string;
   dimensions: number;
-  fallbackModel?: string;
   documentsPath: string;
   outputPath: string;
 }

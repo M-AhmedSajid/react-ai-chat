@@ -12,18 +12,22 @@ import {
   saveEmbeddingConfig,
   type EmbeddingConfig,
 } from "./embedding-config.ts";
+import type { EmbeddingRateLimit } from "../types.ts";
 
 export interface EmbedCommandResult {
   primaryProvider: Awaited<ReturnType<typeof createEmbeddingProvider>>;
-  fallbackProvider?: Awaited<ReturnType<typeof createEmbeddingProvider>>;
   documentsPath: string;
   outputPath: string;
+  embeddingBatchSize?: number;
+  embeddingRateLimit?: EmbeddingRateLimit;
 }
 
 export async function runEmbedCommand(): Promise<EmbedCommandResult> {
   const existingConfig = await getEmbeddingConfig();
 
   let config: EmbeddingConfig;
+  let embeddingBatchSize: number | undefined;
+  let embeddingRateLimit: EmbeddingRateLimit | undefined;
 
   if (existingConfig) {
     console.log("\nExisting embedding configuration found.\n");
@@ -33,11 +37,6 @@ export async function runEmbedCommand(): Promise<EmbedCommandResult> {
     );
     console.log(`Primary model: ${existingConfig.model}`);
     console.log(`Dimensions: ${existingConfig.dimensions}`);
-
-    if (existingConfig.fallbackModel) {
-      console.log(`Fallback model: ${existingConfig.fallbackModel}`);
-    }
-
     console.log(`Documents: ${existingConfig.documentsPath}`);
     console.log(`Output: ${existingConfig.outputPath}`);
 
@@ -80,17 +79,16 @@ export async function runEmbedCommand(): Promise<EmbedCommandResult> {
     },
   );
 
-  const fallbackProvider = config.fallbackModel
-    ? await createEmbeddingProvider(config.provider, config.fallbackModel, {
-        dimensions: config.dimensions,
-      })
-    : undefined;
+  embeddingBatchSize = await selectEmbeddingBatchSize(primaryProvider);
+
+  embeddingRateLimit = await selectEmbeddingRateLimit();
 
   return {
     primaryProvider,
-    fallbackProvider,
     documentsPath: config.documentsPath,
     outputPath: config.outputPath,
+    embeddingBatchSize,
+    embeddingRateLimit,
   };
 }
 
@@ -113,12 +111,6 @@ async function configureEmbedding(): Promise<EmbeddingConfig> {
 
   const dimensions = await selectDimensions(primaryModel);
 
-  const fallbackModel = await selectFallbackModel(
-    provider,
-    primaryModel.id,
-    dimensions,
-  );
-
   const documentsPath = await input({
     message: "Where are your documents located?",
     default: "./content",
@@ -138,11 +130,6 @@ async function configureEmbedding(): Promise<EmbeddingConfig> {
   console.log(`\nProvider: ${selectedProvider.name}`);
   console.log(`Primary model: ${primaryModel.id}`);
   console.log(`Dimensions: ${dimensions}`);
-
-  if (fallbackModel) {
-    console.log(`Fallback model: ${fallbackModel.id}`);
-  }
-
   console.log(`Documents: ${documentsPath}`);
   console.log(`Output: ${outputPath}`);
 
@@ -150,10 +137,106 @@ async function configureEmbedding(): Promise<EmbeddingConfig> {
     provider,
     model: primaryModel.id,
     dimensions,
-    fallbackModel: fallbackModel?.id,
     documentsPath,
     outputPath,
   };
+}
+
+async function selectEmbeddingBatchSize(
+  provider: Awaited<ReturnType<typeof createEmbeddingProvider>>,
+): Promise<number | undefined> {
+  const maxBatchSize = provider.maxBatchSize;
+
+  const useCustomBatchSize = await confirm({
+    message: `Do you want to use a custom embedding batch size? (Provider maximum: ${maxBatchSize})`,
+    default: false,
+  });
+
+  if (!useCustomBatchSize) {
+    return undefined;
+  }
+
+  return input({
+    message: `Embedding batch size (1-${maxBatchSize}):`,
+    default: String(Math.min(10, maxBatchSize)),
+    validate(value) {
+      const parsed = Number(value);
+
+      if (!Number.isInteger(parsed) || parsed <= 0) {
+        return "Please enter a positive whole number.";
+      }
+
+      if (parsed > maxBatchSize) {
+        return `Batch size cannot exceed the provider maximum of ${maxBatchSize}.`;
+      }
+
+      return true;
+    },
+    transformer(value) {
+      return value;
+    },
+  }).then(Number);
+}
+
+async function selectEmbeddingRateLimit(): Promise<
+  EmbeddingRateLimit | undefined
+> {
+  const configureRateLimit = await confirm({
+    message: "Do you want to configure client-side embedding rate limits?",
+    default: false,
+  });
+
+  if (!configureRateLimit) {
+    return undefined;
+  }
+
+  const requestsPerMinute = await input({
+    message: "Requests per minute (leave empty to skip):",
+    default: "",
+    validate(value) {
+      if (!value.trim()) {
+        return true;
+      }
+
+      const parsed = Number(value);
+
+      if (!Number.isInteger(parsed) || parsed <= 0) {
+        return "Please enter a positive whole number or leave it empty.";
+      }
+
+      return true;
+    },
+  });
+
+  const tokensPerMinute = await input({
+    message: "Tokens per minute (leave empty to skip):",
+    default: "",
+    validate(value) {
+      if (!value.trim()) {
+        return true;
+      }
+
+      const parsed = Number(value);
+
+      if (!Number.isInteger(parsed) || parsed <= 0) {
+        return "Please enter a positive whole number or leave it empty.";
+      }
+
+      return true;
+    },
+  });
+
+  const rateLimit: EmbeddingRateLimit = {};
+
+  if (requestsPerMinute.trim()) {
+    rateLimit.requestsPerMinute = Number(requestsPerMinute);
+  }
+
+  if (tokensPerMinute.trim()) {
+    rateLimit.tokensPerMinute = Number(tokensPerMinute);
+  }
+
+  return Object.keys(rateLimit).length > 0 ? rateLimit : undefined;
 }
 
 async function selectPrimaryModel(
@@ -202,47 +285,4 @@ async function selectDimensions(model: EmbeddingModel): Promise<number> {
       value: dimension,
     })),
   });
-}
-
-async function selectFallbackModel(
-  provider: EmbeddingProviderName,
-  primaryModelId: string,
-  primaryDimensions: number,
-): Promise<EmbeddingModel | undefined> {
-  const models = await getEmbeddingModels(provider);
-
-  const compatibleModels = models.filter((model) => {
-    if (model.id === primaryModelId) {
-      return false;
-    }
-
-    if (model.supportedDimensions?.length) {
-      return model.supportedDimensions.includes(primaryDimensions);
-    }
-
-    return model.dimensions === primaryDimensions;
-  });
-
-  if (compatibleModels.length === 0) {
-    return undefined;
-  }
-
-  const useFallback = await confirm({
-    message: `Do you want to use a fallback model (${primaryDimensions} dimensions)?`,
-    default: false,
-  });
-
-  if (!useFallback) {
-    return undefined;
-  }
-
-  const fallbackId = await select({
-    message: "Which fallback model do you want to use?",
-    choices: compatibleModels.map((model) => ({
-      name: model.name,
-      value: model.id,
-    })),
-  });
-
-  return compatibleModels.find((model) => model.id === fallbackId);
 }

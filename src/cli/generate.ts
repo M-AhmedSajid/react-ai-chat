@@ -5,38 +5,97 @@ import {
   EmbeddedChunk,
   EmbeddingIndex,
   EmbeddingProvider,
+  EmbeddingRateLimit,
 } from "../types.ts";
 import { ChatbotError } from "../error.ts";
+import { EmbeddingRateLimiter } from "./embedding-rate-limiter.ts";
+
+const MAX_RETRIES = 5;
+const INITIAL_RETRY_DELAY = 1000;
+const MAX_RETRY_DELAY = 30_000;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export async function generateEmbeddings(
   chunks: Chunk[],
-  primaryProvider: EmbeddingProvider,
-  fallbackProvider?: EmbeddingProvider,
+  provider: EmbeddingProvider,
+  options?: {
+    embeddingBatchSize?: number;
+    embeddingRateLimit?: EmbeddingRateLimit;
+  },
 ): Promise<EmbeddingIndex> {
-  const result: EmbeddedChunk[] = [];
+  if (
+    options?.embeddingBatchSize !== undefined &&
+    (!Number.isInteger(options.embeddingBatchSize) ||
+      options.embeddingBatchSize <= 0)
+  ) {
+    throw new ChatbotError(
+      "Embedding batch size must be a positive whole number.",
+      "INVALID_REQUEST",
+    );
+  }
 
-  const primaryModel = primaryProvider.model;
-  let activeProvider = primaryProvider;
-  let dimensions: number | undefined;
+  if (!Number.isInteger(provider.maxBatchSize) || provider.maxBatchSize <= 0) {
+    throw new ChatbotError(
+      `Embedding provider "${provider.name}" has an invalid maxBatchSize.`,
+      "INVALID_REQUEST",
+    );
+  }
 
-  const getBatchSize = (provider: EmbeddingProvider): number => {
-    if (
-      !Number.isInteger(provider.maxBatchSize) ||
-      provider.maxBatchSize <= 0
-    ) {
-      throw new ChatbotError(
-        `Embedding provider "${provider.name}" has an invalid maxBatchSize.`,
-        "INVALID_REQUEST",
-      );
+  const maxBatchSize = provider.maxBatchSize;
+
+  const requestedBatchSize = options?.embeddingBatchSize ?? maxBatchSize;
+
+  const batchSize = Math.min(requestedBatchSize, maxBatchSize);
+
+  const maxBatchTokens = provider.maxBatchTokens;
+
+  const buildEmbeddingBatch = (startIndex: number): Chunk[] => {
+    /*
+     * Without a documented token limit and exact token counter,
+     * use the provider's batch-size limit.
+     */
+    if (!maxBatchTokens || !provider.countTokens) {
+      return chunks.slice(startIndex, startIndex + batchSize);
     }
 
-    return provider.maxBatchSize;
+    const batch: Chunk[] = [];
+    let totalTokens = 0;
+
+    for (
+      let i = startIndex;
+      i < chunks.length && batch.length < batchSize;
+      i++
+    ) {
+      const chunk = chunks[i];
+
+      if (!chunk) {
+        break;
+      }
+
+      const tokens = provider.countTokens(chunk.text);
+
+      if (tokens > maxBatchTokens) {
+        throw new ChatbotError(
+          `Chunk "${chunk.id}" contains ${tokens} tokens, ` +
+            `which exceeds the maximum batch token limit ` +
+            `of ${maxBatchTokens} for ${provider.model}.`,
+          "INVALID_REQUEST",
+        );
+      }
+
+      if (batch.length > 0 && totalTokens + tokens > maxBatchTokens) {
+        break;
+      }
+
+      batch.push(chunk);
+      totalTokens += tokens;
+    }
+
+    return batch;
   };
 
-  const embedBatch = async (
-    provider: EmbeddingProvider,
-    batch: Chunk[],
-  ): Promise<number[][]> => {
+  const embedBatch = async (batch: Chunk[]): Promise<number[][]> => {
     if (provider.embedMany) {
       return provider.embedMany(batch.map((chunk) => chunk.text));
     }
@@ -50,51 +109,99 @@ export async function generateEmbeddings(
     return embeddings;
   };
 
+  const rateLimiter = new EmbeddingRateLimiter(options?.embeddingRateLimit);
+
+  const result: EmbeddedChunk[] = [];
+  let dimensions: number | undefined;
   let processed = 0;
+  let batchNumber = 0;
 
   while (processed < chunks.length) {
-    const batchSize = getBatchSize(activeProvider);
-    const batch = chunks.slice(processed, processed + batchSize);
+    const batch = buildEmbeddingBatch(processed);
 
-    const totalBatches = Math.ceil(chunks.length / batchSize);
-    const currentBatch = Math.floor(processed / batchSize) + 1;
+    if (batch.length === 0) {
+      throw new ChatbotError(
+        `Unable to create an embedding batch for ${provider.name}.`,
+        "INVALID_REQUEST",
+      );
+    }
+
+    batchNumber++;
+
+    const tokenCount = provider.countTokens
+      ? batch.reduce(
+          (total, chunk) => total + provider.countTokens!(chunk.text),
+          0,
+        )
+      : 0;
 
     console.log(
-      `Embedding batch ${currentBatch}/${totalBatches}: chunks ${processed + 1}-${processed + batch.length}/${chunks.length} via ${activeProvider.name} (${activeProvider.model})`,
+      `Embedding batch ${batchNumber}: chunks ${
+        processed + 1
+      }-${processed + batch.length}/${chunks.length} ` +
+        `via ${provider.name} (${provider.model})` +
+        `${tokenCount > 0 ? ` [${tokenCount} tokens]` : ""}`,
     );
 
-    let vectors: number[][];
+    let vectors: number[][] | undefined;
 
-    try {
-      vectors = await embedBatch(activeProvider, batch);
-    } catch (error) {
-      if (
-        activeProvider === primaryProvider &&
-        fallbackProvider &&
-        error instanceof ChatbotError &&
-        error.code === "RATE_LIMIT"
-      ) {
-        console.warn(
-          `\nPrimary model "${primaryProvider.model}" reached its limit.`,
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        await rateLimiter.wait(tokenCount);
+
+        vectors = await embedBatch(batch);
+
+        break;
+      } catch (error) {
+        if (!(error instanceof ChatbotError && error.code === "RATE_LIMIT")) {
+          throw error;
+        }
+
+        if (attempt >= MAX_RETRIES) {
+          break;
+        }
+
+        const delay = Math.min(
+          INITIAL_RETRY_DELAY * 2 ** attempt,
+          MAX_RETRY_DELAY,
         );
 
         console.warn(
-          `Switching to fallback model "${fallbackProvider.model}".\n`,
+          `Rate limit reached for ${provider.model}. ` +
+            `Retrying in ${delay / 1000}s ` +
+            `(attempt ${attempt + 1}/${MAX_RETRIES})...`,
         );
 
-        activeProvider = fallbackProvider;
-
-        vectors = await embedBatch(activeProvider, batch);
-      } else {
-        throw error;
+        await sleep(delay);
       }
     }
 
-    console.log(`✓ Batch ${currentBatch}/${totalBatches} completed`);
+    if (!vectors) {
+      throw new ChatbotError(
+        `Embedding generation failed.\n\n` +
+          `Provider quota or rate limit reached:\n` +
+          `  Provider: ${provider.name}\n` +
+          `  Model: ${provider.model}\n\n` +
+          `The provider continued to reject embedding requests ` +
+          `after ${MAX_RETRIES} retries with exponential backoff.\n\n` +
+          `The current embedding run was not completed, and no new ` +
+          `embedding index was saved.\n\n` +
+          `Possible solutions:\n` +
+          `  • Wait for the provider quota or rate limit to reset\n` +
+          `  • Reduce the amount of content being embedded\n` +
+          `  • Configure an appropriate client-side rate limit\n` +
+          `  • Use a project or account with higher quota\n` +
+          `  • Try again later`,
+        "RATE_LIMIT",
+      );
+    }
+
+    console.log(`✓ Batch ${batchNumber} completed`);
 
     if (vectors.length !== batch.length) {
       throw new ChatbotError(
-        `${activeProvider.name} returned ${vectors.length} embeddings for ${batch.length} chunks.`,
+        `${provider.name} returned ${vectors.length} embeddings ` +
+          `for ${batch.length} chunks.`,
         "PROVIDER",
       );
     }
@@ -105,7 +212,8 @@ export async function generateEmbeddings(
 
       if (!vector) {
         throw new ChatbotError(
-          `${activeProvider.name} returned an empty embedding for chunk "${chunk.id}".`,
+          `${provider.name} returned an empty embedding ` +
+            `for chunk "${chunk.id}".`,
           "PROVIDER",
         );
       }
@@ -114,7 +222,9 @@ export async function generateEmbeddings(
         dimensions = vector.length;
       } else if (vector.length !== dimensions) {
         throw new ChatbotError(
-          `Embedding model "${activeProvider.model}" returned ${vector.length} dimensions, but the index expects ${dimensions}.`,
+          `Embedding model "${provider.model}" returned ` +
+            `${vector.length} dimensions, but the index expects ` +
+            `${dimensions}.`,
           "INVALID_REQUEST",
         );
       }
@@ -125,7 +235,7 @@ export async function generateEmbeddings(
         chunk: chunk.chunk,
         text: chunk.text,
         embedding: vector,
-        embeddingModel: activeProvider.model,
+        embeddingModel: provider.model,
       });
     }
 
@@ -133,9 +243,8 @@ export async function generateEmbeddings(
   }
 
   return {
-    provider: primaryProvider.name,
-    model: primaryModel,
-    fallbackModel: fallbackProvider?.model,
+    provider: provider.name,
+    model: provider.model,
     dimensions: dimensions ?? 0,
     chunks: result,
   };

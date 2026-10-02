@@ -22,16 +22,18 @@ if (command === "embed") {
 
   const {
     primaryProvider,
-    fallbackProvider,
     documentsPath,
     outputPath,
+    embeddingBatchSize,
+    embeddingRateLimit,
   } = await runEmbedCommand();
 
   await createIndex({
     provider: primaryProvider,
-    fallbackProvider,
     documentsPath,
     outputPath,
+    embeddingBatchSize,
+    embeddingRateLimit,
   });
 
   process.exit(0);

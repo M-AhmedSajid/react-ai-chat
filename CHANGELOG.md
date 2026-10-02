@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/specificati
 
 # Changelog
 
+## 2.5.2
+
+### Added
+
+- Added configurable embedding batch sizes to the interactive `embed` command.
+- Added client-side embedding rate limits for requests per minute and tokens per minute.
+- Added token-aware batching for providers that expose token limits and token counters.
+- Added persisted embedding configuration in `chatbot/embedding.config.json`.
+- Added `EmbeddingRateLimit` to the public TypeScript types.
+
+### Changed
+
+- Embedding requests now use exponential backoff when rate-limited.
+- Embedding generation now keeps one provider and model for the entire indexing run.
+- Updated the CLI to pass batch-size and rate-limit settings to index generation.
+
+### Removed
+
+- Removed fallback embedding provider/model selection from the interactive embedding workflow.### Removed
+- Removed automatic switching to a fallback provider when rate limits are reached.
+
 ## 2.5.1
 
 ### Fixed
