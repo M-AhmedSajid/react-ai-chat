@@ -26,6 +26,7 @@ _See react-ai-chat powering an AI chatbot in a real portfolio._
 - Optional RAG with local embedding indexes
 - Multiple embedding providers
 - Batched embedding generation
+- Resumable embedding generation
 - Provider-specific embedding batch limits
 - Sequential batch processing to reduce unnecessary rate-limit pressure
 - Light, dark, and automatic theme modes
@@ -215,6 +216,29 @@ The CLI creates an embedding index from your configured documents.
 
 Embedding requests are processed in batches according to the selected provider's supported batch size. Batches are processed sequentially, so the CLI does not send every chunk to the provider at the same time.
 
+If an embedding run is interrupted or stops because of a provider quota or rate limit, progress is saved automatically after each successful batch.
+
+Run the same command again to continue:
+
+```bash
+npx react-ai-chat embed
+```
+
+If an incomplete embedding run is found, the CLI asks whether you want to:
+
+* Continue from where the previous run stopped
+* Start a new embedding run
+
+When continuing, already-embedded chunks are skipped. Chunks are identified using their content hash, so if a document chunk changes, only that chunk needs to be embedded again.
+
+Progress is stored temporarily in:
+
+```text
+chatbot/embedding.progress.json
+```
+
+The progress file is automatically deleted after the embedding index is successfully generated.
+
 You can inspect the available options with:
 
 ```bash
@@ -228,9 +252,9 @@ Each embedding provider defines a maximum batch size. The index generator uses t
 For example, a provider may process:
 
 ```text
-Embedding batch 1/3: chunks 1-32/70
-Embedding batch 2/3: chunks 33-64/70
-Embedding batch 3/3: chunks 65-70/70
+Embedding batch 1: chunks 1-32/70
+Embedding batch 2: chunks 33-64/70
+Embedding batch 3: chunks 65-70/70
 ```
 
 Each batch is sent as a single `embedMany()` request.

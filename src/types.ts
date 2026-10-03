@@ -57,6 +57,7 @@ export interface CreateIndexOptions {
   outputPath?: string;
   embeddingBatchSize?: number;
   embeddingRateLimit?: EmbeddingRateLimit;
+  progressPath?: string;
 }
 
 export interface RetrieveContextOptions {

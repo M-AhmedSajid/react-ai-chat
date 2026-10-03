@@ -10,6 +10,7 @@ export async function createIndex({
   outputPath = "./chatbot/embeddings.json",
   embeddingBatchSize,
   embeddingRateLimit,
+  progressPath,
 }: CreateIndexOptions) {
   console.log(`Loading documents from ${documentsPath}...`);
 
@@ -28,6 +29,7 @@ export async function createIndex({
   const embeddings = await generateEmbeddings(chunks, provider, {
     embeddingBatchSize,
     embeddingRateLimit,
+    progressPath,
   });
 
   console.log("\nSaving index file...");

@@ -26,6 +26,7 @@ if (command === "embed") {
     outputPath,
     embeddingBatchSize,
     embeddingRateLimit,
+    progressPath,
   } = await runEmbedCommand();
 
   await createIndex({
@@ -34,6 +35,7 @@ if (command === "embed") {
     outputPath,
     embeddingBatchSize,
     embeddingRateLimit,
+    progressPath,
   });
 
   process.exit(0);

@@ -7,7 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/specificati
 
 # Changelog
 
-## 2.5.2
+## 2.7.0
+
+### Added
+
+- Added resumable embedding generation.
+- Interrupted embedding runs now save progress after each successful batch.
+- Running `npx react-ai-chat embed` again detects incomplete progress and allows continuing or starting over.
+- Changed document chunks are automatically re-embedded using content hashes.
+- Completed embedding runs automatically remove the progress file.
+
+## 2.6.0
 
 ### Added
 

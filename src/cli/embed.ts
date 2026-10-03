@@ -13,6 +13,11 @@ import {
   type EmbeddingConfig,
 } from "./embedding-config.ts";
 import type { EmbeddingRateLimit } from "../types.ts";
+import {
+  deleteEmbeddingProgress,
+  getEmbeddingProgressPath,
+  loadEmbeddingProgress,
+} from "./generate.ts";
 
 export interface EmbedCommandResult {
   primaryProvider: Awaited<ReturnType<typeof createEmbeddingProvider>>;
@@ -20,16 +25,64 @@ export interface EmbedCommandResult {
   outputPath: string;
   embeddingBatchSize?: number;
   embeddingRateLimit?: EmbeddingRateLimit;
+  progressPath: string;
 }
 
 export async function runEmbedCommand(): Promise<EmbedCommandResult> {
+  const progressPath = getEmbeddingProgressPath();
+  const existingProgress = await loadEmbeddingProgress(progressPath);
+
+  let continueExistingRun = false;
+
+  if (existingProgress) {
+    const completed = existingProgress.chunks.length;
+
+    continueExistingRun = await confirm({
+      message: `An incomplete embedding run was found (${completed} chunk${
+        completed === 1 ? "" : "s"
+      } already embedded). Continue from where it stopped?`,
+      default: true,
+    });
+
+    if (!continueExistingRun) {
+      await deleteEmbeddingProgress(progressPath);
+    }
+  }
+
   const existingConfig = await getEmbeddingConfig();
 
   let config: EmbeddingConfig;
   let embeddingBatchSize: number | undefined;
   let embeddingRateLimit: EmbeddingRateLimit | undefined;
 
-  if (existingConfig) {
+  if (continueExistingRun) {
+    if (!existingConfig) {
+      throw new Error(
+        "An incomplete embedding run was found, but the embedding configuration is missing. " +
+          "The run cannot be resumed safely.",
+      );
+    }
+
+    config = existingConfig;
+
+    if (
+      config.provider !== existingProgress!.provider ||
+      config.model !== existingProgress!.model ||
+      config.dimensions !== existingProgress!.dimensions
+    ) {
+      throw new Error(
+        "The saved embedding configuration does not match the incomplete embedding run.",
+      );
+    }
+
+    console.log("\nContinuing the incomplete embedding run.\n");
+
+    console.log(`Provider: ${embeddingProviders[config.provider].name}`);
+    console.log(`Primary model: ${config.model}`);
+    console.log(`Dimensions: ${config.dimensions}`);
+    console.log(`Documents: ${config.documentsPath}`);
+    console.log(`Output: ${config.outputPath}`);
+  } else if (existingConfig) {
     console.log("\nExisting embedding configuration found.\n");
 
     console.log(
@@ -89,6 +142,7 @@ export async function runEmbedCommand(): Promise<EmbedCommandResult> {
     outputPath: config.outputPath,
     embeddingBatchSize,
     embeddingRateLimit,
+    progressPath,
   };
 }
 
